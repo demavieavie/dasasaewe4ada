@@ -7,7 +7,8 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local Custom = {} do
   Custom.ColorRGB = Color3.fromRGB(183, 0, 226)
-  Custom.Font = Enum.Font.Ubuntu
+  Custom.Font = Enum.Font.GothamBold
+  Custom.FontBody = Enum.Font.Gotham
 
   function Custom:Create(Name, Properties, Parent)
     local _instance = Instance.new(Name)
@@ -120,38 +121,27 @@ end
 function CircleClick(Button, X, Y)
 	task.spawn(function()
 		Button.ClipsDescendants = true
-		
+
 		local Circle = Instance.new("ImageLabel")
-		Circle.Image = "rbxassetid://106471194043211"
-		Circle.ImageColor3 = Color3.fromRGB(80, 80, 80)
-		Circle.ImageTransparency = 0.8999999761581421
-		Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		Circle.Image = "rbxassetid://266543268"
+		Circle.ImageColor3 = Color3.fromRGB(130, 130, 130)
+		Circle.ImageTransparency = 0.7
 		Circle.BackgroundTransparency = 1
 		Circle.ZIndex = 10
 		Circle.Name = "Circle"
+		Circle.AnchorPoint = Vector2.new(0.5, 0.5)
+		Circle.Position = UDim2.new(0.5, 0, 0.5, 0)
+		Circle.Size = UDim2.new(0, 0, 0, 0)
 		Circle.Parent = Button
-		
-		local NewX = X - Button.AbsolutePosition.X
-		local NewY = Y - Button.AbsolutePosition.Y
-		Circle.Position = UDim2.new(0, NewX, 0, NewY)
 
-		local Size = math.max(Button.AbsoluteSize.X, Button.AbsoluteSize.Y) * 1.5
+		local Size = math.max(Button.AbsoluteSize.X, Button.AbsoluteSize.Y) * 1.2
 
-		local Time = 0.5
-		local TweenInfo = TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-		local Tween = TweenService:Create(Circle, TweenInfo, {
+		TweenService:Create(Circle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 			Size = UDim2.new(0, Size, 0, Size),
-			Position = UDim2.new(0.5, -Size/2, 0.5, -Size/2)
-		})
-		
-		Tween:Play()
-		
-		Tween.Completed:Connect(function()
-			for i = 1, 10 do
-				Circle.ImageTransparency = Circle.ImageTransparency + 0.01
-				wait(Time / 10)
-			end
+			ImageTransparency = 1
+		}):Play()
+
+		task.delay(0.25, function()
 			Circle:Destroy()
 		end)
 	end)
@@ -325,7 +315,7 @@ function WisHub_Library:SetNotification(Config)
   })
 
   local TextLabel2 = Custom:Create("TextLabel", {
-    Font = Custom.Font,
+    Font = Custom.FontBody,
     TextColor3 = Color3.fromRGB(255, 255, 255),
     TextSize = 13,
     Text = Content,
@@ -383,7 +373,7 @@ function WisHub_Library:CreateWindow(Config)
   local TabWidth = Config[3] or Config["Tab Width"] or 120
   local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(600, 350)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
-  local DiscordLogo = Config.DiscordIcon or Config[6] or ""
+  local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
 
   local Funcs = {}
 
@@ -417,8 +407,8 @@ function WisHub_Library:CreateWindow(Config)
 
   local Main = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
-    BackgroundColor3 = Color3.fromRGB(15, 15, 15),
-    BackgroundTransparency = 0.1,
+    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+    BackgroundTransparency = 0,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -445,7 +435,7 @@ function WisHub_Library:CreateWindow(Config)
   local TextLabel = Custom:Create("TextLabel", {
     Font = Custom.Font,
     Text = Title,
-    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextColor3 = Custom.ColorRGB,
     TextSize = 14,
     TextXAlignment = Enum.TextXAlignment.Left,
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -461,8 +451,8 @@ function WisHub_Library:CreateWindow(Config)
   local TextLabel1 = Custom:Create("TextLabel", {
     Font = Custom.Font,
     Text = Description,
-    TextColor3 = Custom.ColorRGB,
-    TextSize = 14,
+    TextColor3 = Color3.fromRGB(235, 235, 240),
+    TextSize = 13,
     TextXAlignment = Enum.TextXAlignment.Left,
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
     BackgroundTransparency = 0.9990000128746033,
@@ -500,6 +490,8 @@ function WisHub_Library:CreateWindow(Config)
 
   local DiscordIcon = Custom:Create("ImageLabel", {
     Image = DiscordLogo,
+    ImageColor3 = Color3.fromRGB(88, 101, 242),
+    ScaleType = Enum.ScaleType.Fit,
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     AnchorPoint = Vector2.new(0, 0.5),
@@ -1382,7 +1374,7 @@ function WisHub_Library:CreateWindow(Config)
         }, Paragraph)
       
         local ParagraphContent = Custom:Create("TextLabel", {
-          Font = Custom.Font,
+          Font = Custom.FontBody,
           Text = Content,
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
@@ -1539,7 +1531,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local ButtonContent = Custom:Create("TextLabel", {
 					Name = "ButtonContent",
-					Font = Custom.Font,
+					Font = Custom.FontBody,
 					Text = Content,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					TextSize = 12,
@@ -1651,7 +1643,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local ToggleContent = Custom:Create("TextLabel", {
 					Name = "ToggleContent",
-					Font = Custom.Font,
+					Font = Custom.FontBody,
 					Text = Content,
 					TextSize = 12,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -1800,7 +1792,7 @@ function WisHub_Library:CreateWindow(Config)
 				}, Slider)
 
 				local SliderContent = Custom:Create("TextLabel", {
-					Font = Custom.Font,
+					Font = Custom.FontBody,
 					Text = Content,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					TextSize = 12,
@@ -2008,7 +2000,7 @@ function WisHub_Library:CreateWindow(Config)
         }, Input)
 
         local InputContent = Custom:Create("TextLabel", {
-          Font = Custom.Font,
+          Font = Custom.FontBody,
           Text = Content,
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
@@ -2150,7 +2142,7 @@ function WisHub_Library:CreateWindow(Config)
         })
 
         local DropdownContent = Custom:Create("TextLabel", {
-          Font = Custom.Font,
+          Font = Custom.FontBody,
           Text = Content,
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
