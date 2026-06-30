@@ -1795,7 +1795,7 @@ function WisHub_Library:CreateWindow(Config)
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 19),
+          Position = UDim2.new(0, 10, 0, 21),
           Name = "ParagraphContent",
         }, Paragraph)
 
@@ -1804,7 +1804,7 @@ function WisHub_Library:CreateWindow(Config)
           local lineCount = math.ceil(ParagraphContent.TextBounds.X / ParagraphContent.AbsoluteSize.X)
 
           ParagraphContent.Size = UDim2.new(1, -16, 0, 12 + (12 * lineCount))
-          Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 27)
+          Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 30)
           ParagraphContent.TextWrapped = true
 
           UpdateSizeSection()
@@ -1953,7 +1953,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 19),
+					Position = UDim2.new(0, 10, 0, 21),
 					Size = UDim2.new(1, -70, 0, 12)
 				}, Button)
 
@@ -1961,7 +1961,7 @@ function WisHub_Library:CreateWindow(Config)
           local _Height = 12 + (12 * (ButtonContent.TextBounds.X // ButtonContent.AbsoluteSize.X))
           ButtonContent.Size = UDim2.new(1, -70, 0, _Height)
           
-          Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 27)
+          Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 30)
         end
       
         ButtonContent.TextWrapped = true
@@ -2076,7 +2076,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 19),
+					Position = UDim2.new(0, 10, 0, 21),
 					Size = UDim2.new(1, -100, 0, 12)
 				}, Toggle)
 				
@@ -2085,7 +2085,7 @@ function WisHub_Library:CreateWindow(Config)
           local Ratio = ToggleContent.TextBounds.X / ToggleContent.AbsoluteSize.X
 
           ToggleContent.Size = UDim2.new(1, -100, 0, 12 + (12 * math.ceil(Ratio)))
-          Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 27)
+          Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 30)
           ToggleContent.TextWrapped = true
         end
       
@@ -2236,7 +2236,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.9990000128746033,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 19),
+					Position = UDim2.new(0, 10, 0, 21),
 					Size = UDim2.new(1, -180, 0, 12),
 					Name = "SliderContent",
 				}, Slider)
@@ -2244,7 +2244,7 @@ function WisHub_Library:CreateWindow(Config)
         local function UpdateSliderSize()
           SliderContent.TextWrapped = false
           SliderContent.Size = UDim2.new(1, -180, 0, 12 + (12 * math.floor(SliderContent.TextBounds.X / SliderContent.AbsoluteSize.X)))
-          Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 27)
+          Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 30)
           SliderContent.TextWrapped = true
         end
 
@@ -2468,7 +2468,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 19),
+          Position = UDim2.new(0, 10, 0, 21),
           Size = UDim2.new(1, -180, 0, 12),
           Name = "InputContent",
           Parent = Input
@@ -2479,7 +2479,7 @@ function WisHub_Library:CreateWindow(Config)
           local Calculated = 12 + (12 * math.floor(Ratio))
 
           InputContent.Size = UDim2.new(1, -180, 0, Calculated)
-          Input.Size = UDim2.new(1, 0, 0, InputContent.AbsoluteSize.Y + 27)
+          Input.Size = UDim2.new(1, 0, 0, InputContent.AbsoluteSize.Y + 30)
         end
       
         UpdateInputSize()
@@ -2626,7 +2626,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 19),
+          Position = UDim2.new(0, 10, 0, 21),
           Size = UDim2.new(1, -180, 0, 12),
           Name = "DropdownContent",
           Parent = Dropdown
@@ -2634,13 +2634,13 @@ function WisHub_Library:CreateWindow(Config)
         
 				DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
 				DropdownContent.TextWrapped = true
-				Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 27)
+				Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
         
         DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
           DropdownContent.TextWrapped = false
             
 					DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
-					Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 27)
+					Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
             
           DropdownContent.TextWrapped = true
 
