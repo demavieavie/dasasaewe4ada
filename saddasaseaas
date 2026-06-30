@@ -226,7 +226,7 @@ function WisHub_Library:SetNotification(Config)
   })
 
   local DropShadow = Custom:Create("ImageLabel", {
-    Image = "",
+    Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(0, 0, 0),
     ImageTransparency = 0.5,
     ScaleType = Enum.ScaleType.Slice,
@@ -340,31 +340,29 @@ function WisHub_Library:SetNotification(Config)
     NotificationFrame.Size = UDim2.new(1, 0, 0, TextLabel2.AbsoluteSize.Y + 40)
   end
 
+  local NotifFuncs = {}
   local Waitted = false
 
-  function Notification:Close()
-    if Waitted then return false end
+  local function CloseNotif()
+    if Waitted then return end
     Waitted = true
 
-    local tween = TweenService:Create(NotificationFrameReal,TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut),{Position = UDim2.new(0, 400, 0, 0)})
-    tween:Play()
+    TweenService:Create(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 400, 0, 0)}):Play()
 
-    task.wait(tonumber(Time) / 1.2)
-
-    NotificationFrame:Destroy()
-
-    Waitted = false
+    task.delay(tonumber(Time) / 1.2, function()
+      NotificationFrame:Destroy()
+    end)
   end
 
-  Close.Activated:Connect(function()
-    Notification:Close()
-	end)
+  NotifFuncs.Close = CloseNotif
 
-  TweenService:Create(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 0, 0, 0)} ):Play()
-  task.wait(tonumber(Delay))
-  Notification:Close()
+  Close.Activated:Connect(CloseNotif)
 
-  return Notification
+  TweenService:Create(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+
+  task.delay(tonumber(Delay), CloseNotif)
+
+  return NotifFuncs
 end
 
 function WisHub_Library:CreateWindow(Config)
@@ -391,7 +389,7 @@ function WisHub_Library:CreateWindow(Config)
   }, WisHubGui)
 
   local DropShadow = Custom:Create("ImageLabel", {
-    Image = "",
+    Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(15, 15, 15),
     ImageTransparency = 0.5,
     ScaleType = Enum.ScaleType.Slice,
@@ -408,7 +406,7 @@ function WisHub_Library:CreateWindow(Config)
   local Main = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    BackgroundTransparency = 0,
+    BackgroundTransparency = 0.08,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -538,7 +536,7 @@ function WisHub_Library:CreateWindow(Config)
     WisHub_Library:SetNotification({
       Title = "WisHUB",
       Description = "Discord",
-      Content = "Link disalin ke clipboard: " .. DiscordInvite
+      Content = "Copied to clipboard: " .. DiscordInvite
     })
   end)
 
@@ -803,7 +801,7 @@ function WisHub_Library:CreateWindow(Config)
 
   Custom:Create("TextLabel", {
     Font = Custom.Font,
-    Text = "Tutup WisHUB?",
+    Text = "Close WisHUB?",
     TextColor3 = Color3.fromRGB(255, 255, 255),
     TextSize = 16,
     BackgroundTransparency = 1,
@@ -816,7 +814,7 @@ function WisHub_Library:CreateWindow(Config)
 
   Custom:Create("TextLabel", {
     Font = Custom.Font,
-    Text = "Yakin mau menutup UI ini?",
+    Text = "Are you sure you want to close?",
     TextColor3 = Color3.fromRGB(175, 175, 185),
     TextSize = 13,
     BackgroundTransparency = 1,
@@ -829,7 +827,7 @@ function WisHub_Library:CreateWindow(Config)
 
   local CancelBtn = Custom:Create("TextButton", {
     Font = Custom.Font,
-    Text = "Batal",
+    Text = "Cancel",
     TextColor3 = Color3.fromRGB(235, 235, 235),
     TextSize = 14,
     AnchorPoint = Vector2.new(0, 1),
@@ -847,7 +845,7 @@ function WisHub_Library:CreateWindow(Config)
 
   local OkBtn = Custom:Create("TextButton", {
     Font = Custom.Font,
-    Text = "Tutup",
+    Text = "Close",
     TextColor3 = Color3.fromRGB(255, 255, 255),
     TextSize = 14,
     AnchorPoint = Vector2.new(1, 1),
@@ -912,7 +910,7 @@ function WisHub_Library:CreateWindow(Config)
   }, MoreBlur)
 
   local DropShadow1 = Custom:Create("ImageLabel", {
-    Image = "",
+    Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(0, 0, 0),
     ImageTransparency = 0.5,
     ScaleType = Enum.ScaleType.Slice,
@@ -1909,29 +1907,35 @@ function WisHub_Library:CreateWindow(Config)
           TweenService:Create(SliderDraggable, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) }):Play()
         end
         
+        local _LastX = nil
+        local moveConn = nil
+
         SliderFrame.InputBegan:Connect(function(Input)
           if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
+            if not moveConn then
+              moveConn = UserInputService.InputChanged:Connect(function(MoveInput)
+                if Dragging and (MoveInput.UserInputType == Enum.UserInputType.MouseMovement or MoveInput.UserInputType == Enum.UserInputType.Touch) then
+                  local CurrPosX = MoveInput.Position.X
+                  if CurrPosX ~= _LastX then
+                    _LastX = CurrPosX
+                    local SizeScale = math.clamp((CurrPosX - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
+                    Funcs_Slider:Set(Min + ((Max - Min) * SizeScale))
+                  end
+                end
+              end)
+            end
           end
         end)
-      
+
         SliderFrame.InputEnded:Connect(function(Input)
           if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = false
-            Callback(Funcs_Slider.Value)
-          end
-        end)
-      
-        local _LastX = nil
-        UserInputService.InputChanged:Connect(function(Input)
-          if Dragging then
-            local CurrPosX = Input.Position.X
-            if CurrPosX ~= _LastX then
-              _LastX = CurrPosX
-      
-              local SizeScale = math.clamp((CurrPosX - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
-              Funcs_Slider:Set(Min + ((Max - Min) * SizeScale))
+            if moveConn then
+              moveConn:Disconnect()
+              moveConn = nil
             end
+            Callback(Funcs_Slider.Value)
           end
         end)
         
@@ -2199,7 +2203,7 @@ function WisHub_Library:CreateWindow(Config)
 
             DropPageLayout:JumpToIndex(SelectOptionsFrame.LayoutOrder)
                             
-            local BlurTween = TweenService:Create(MoreBlur, tweenInfo, {BackgroundTransparency = 0.7})
+            local BlurTween = TweenService:Create(MoreBlur, tweenInfo, {BackgroundTransparency = 0.55})
             local DropdownTween = TweenService:Create(DropdownSelect, tweenInfo, {Position = UDim2.new(1, -11, 0.5, 0)})
               
             BlurTween:Play()
