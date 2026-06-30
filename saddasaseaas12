@@ -443,7 +443,7 @@ function WisHub_Library:CreateWindow(Config)
   local DropShadow = Custom:Create("ImageLabel", {
     Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(15, 15, 15),
-    ImageTransparency = 0.78,
+    ImageTransparency = 0.7,
     ScaleType = Enum.ScaleType.Slice,
     SliceCenter = Rect.new(49, 49, 450, 450),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -458,7 +458,7 @@ function WisHub_Library:CreateWindow(Config)
   local Main = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    BackgroundTransparency = 0.32,
+    BackgroundTransparency = 0.22,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -863,7 +863,7 @@ function WisHub_Library:CreateWindow(Config)
   for Index = 1, SearchMaxResults do
     local Result = Custom:Create("Frame", {
       BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-      BackgroundTransparency = 0.955,
+      BackgroundTransparency = 0.94,
       BorderSizePixel = 0,
       LayoutOrder = Index,
       Size = UDim2.new(1, 0, 0, 34),
@@ -1576,7 +1576,7 @@ function WisHub_Library:CreateWindow(Config)
       local SectionReal = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundTransparency = 0.955,
+        BackgroundTransparency = 0.94,
         BorderColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         LayoutOrder = 1,
@@ -1772,7 +1772,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Paragraph = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.955,
+          BackgroundTransparency = 0.94,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
@@ -1929,11 +1929,12 @@ function WisHub_Library:CreateWindow(Config)
 
         local Button = Custom:Create("Frame", {
 					Name = "Button",
-					BackgroundColor3 = Color3.fromRGB(120, 35, 150),
-					BackgroundTransparency = 0.9,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.94,
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
-					Size = UDim2.new(1, 0, 0, 35)
+          Position = UDim2.new(0, 1, 0, 0),
+					Size = UDim2.new(1, -2, 0, 35)
 				}, SectionAdd)
 
         Custom:Create("UICorner", {
@@ -1943,21 +1944,21 @@ function WisHub_Library:CreateWindow(Config)
         Custom:Create("UIStroke", {
           Color = Custom.ColorRGB,
           Thickness = 1,
-          Transparency = 0.62
+          Transparency = 0.78
         }, Button)
 
         Custom:Create("UIGradient", {
           Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(145, 32, 185)),
-            ColorSequenceKeypoint.new(0.45, Color3.fromRGB(45, 33, 62)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(0.72, Color3.fromRGB(92, 62, 112)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(183, 0, 226))
           },
           Rotation = 0
         }, Button)
 
         local ButtonAccent = Custom:Create("Frame", {
           BackgroundColor3 = Custom.ColorRGB,
-          BackgroundTransparency = 0.18,
+          BackgroundTransparency = 0.35,
           BorderSizePixel = 0,
           Position = UDim2.new(0, 0, 0, 6),
           Size = UDim2.new(0, 2, 1, -12),
@@ -1980,7 +1981,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 7),
-					Size = UDim2.new(1, -90, 0, 13)
+					Size = UDim2.new(1, -76, 0, 13)
 				}, Button)
 
         local ButtonContent = Custom:Create("TextLabel", {
@@ -1996,14 +1997,14 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 21),
-					Size = UDim2.new(1, -90, 0, 12)
+					Size = UDim2.new(1, -76, 0, 12)
 				}, Button)
 
         local function UpdateButtonSize()
           local _Height = 12 + (12 * (ButtonContent.TextBounds.X // ButtonContent.AbsoluteSize.X))
-          ButtonContent.Size = UDim2.new(1, -90, 0, _Height)
+          ButtonContent.Size = UDim2.new(1, -76, 0, _Height)
           
-          Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 30)
+          Button.Size = UDim2.new(1, -2, 0, ButtonContent.AbsoluteSize.Y + 30)
         end
       
         ButtonContent.TextWrapped = true
@@ -2031,11 +2032,11 @@ function WisHub_Library:CreateWindow(Config)
         local FeatureFrame1 = Custom:Create("Frame", {
 					Name = "FeatureFrame",
 					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundColor3 = Custom.ColorRGB,
-					BackgroundTransparency = 0.42,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.92,
 					BorderSizePixel = 0,
-					Position = UDim2.new(1, -14, 0.5, 0),
-					Size = UDim2.new(0, 30, 0, 24)
+					Position = UDim2.new(1, -16, 0.5, 0),
+					Size = UDim2.new(0, 20, 0, 20)
 				}, Button)
 
         Custom:Create("UICorner", {
@@ -2045,7 +2046,7 @@ function WisHub_Library:CreateWindow(Config)
         Custom:Create("UIStroke", {
           Color = Custom.ColorRGB,
           Thickness = 1,
-          Transparency = 0.35
+          Transparency = 0.75
         }, FeatureFrame1)
 
         Custom:Create("ImageLabel", {
@@ -2057,15 +2058,15 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
           Position = UDim2.new(0.5, 0, 0.5, 0),
-          Size = UDim2.new(0, 15, 0, 15)
+          Size = UDim2.new(0, 14, 0, 14)
         }, FeatureFrame1)
 
         ButtonButton.Activated:Connect(function()
 					CircleClick(ButtonButton, Player:GetMouse().X, Player:GetMouse().Y)
-          TweenService:Create(Button, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.82}):Play()
+          TweenService:Create(Button, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.9}):Play()
           task.delay(0.12, function()
             if Button and Button.Parent then
-              TweenService:Create(Button, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.9}):Play()
+              TweenService:Create(Button, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.94}):Play()
             end
           end)
 
@@ -2097,7 +2098,7 @@ function WisHub_Library:CreateWindow(Config)
         local Toggle = Custom:Create("Frame", {
 					Name = "Toggle",
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.955,
+					BackgroundTransparency = 0.94,
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
 					Size = UDim2.new(1, 0, 0, 35)
@@ -2254,7 +2255,7 @@ function WisHub_Library:CreateWindow(Config)
         
         local Slider = Custom:Create("Frame", {
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.955,
+					BackgroundTransparency = 0.94,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
@@ -2318,7 +2319,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.18,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(1, -155, 0.5, 0),
+					Position = UDim2.new(1, -170, 0.5, 0),
 					Size = UDim2.new(0, 30, 0, 18),
 					Name = "SliderInput",
 				}, Slider)
@@ -2354,8 +2355,8 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.800000011920929,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(1, -20, 0.5, 0),
-					Size = UDim2.new(0, 100, 0, 3),
+					Position = UDim2.new(1, -24, 0.5, 0),
+					Size = UDim2.new(0, 88, 0, 3),
 					Name = "SliderFrame",
 				}, Slider)
 
@@ -2485,7 +2486,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Input = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.955,
+          BackgroundTransparency = 0.94,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
@@ -2629,7 +2630,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Dropdown = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.955,
+          BackgroundTransparency = 0.94,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
