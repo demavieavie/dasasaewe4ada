@@ -873,12 +873,12 @@ function WisHub_Library:CreateWindow(Config)
         local Tab = Custom:Create("Frame", {
             BackgroundColor3 = Color3.fromRGB(30, 28, 38),
             LayoutOrder = CountTab,
-            Size = UDim2.new(1, 0, 0, 30),
+            Size = UDim2.new(1, 0, 0, 28),
             Name = "Tab",
             Parent = ScrollTab
         })
 
-        Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, Tab)
+        Custom:Create("UICorner", {CornerRadius = UDim.new(0, 3)}, Tab)
 
         tabData.frame = Tab
 
@@ -918,7 +918,7 @@ function WisHub_Library:CreateWindow(Config)
 
             local ChooseFrame = Custom:Create("Frame", {
                 BackgroundColor3 = Custom.ColorRGB,
-                Position = UDim2.new(0, 2, 0, 9),
+                Position = UDim2.new(0, 2, 0, 8),
                 Size = UDim2.new(0, 1, 0, 12),
                 Name = "ChooseFrame",
             }, Tab)
@@ -945,7 +945,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 Tab.BackgroundColor3 = Color3.fromRGB(40, 38, 50)
 
-                local targetY = 9 + (33 * Tab.LayoutOrder)
+                local targetY = 8 + (31 * Tab.LayoutOrder)
                 TweenService:Create(FrameChoose, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
                     Position = UDim2.new(0, 2, 0, targetY),
                     Size = UDim2.new(0, 1, 0, 12)
@@ -972,7 +972,7 @@ function WisHub_Library:CreateWindow(Config)
                 BackgroundTransparency = 1,
                 ClipsDescendants = true,
                 LayoutOrder = CountSection,
-                Size = UDim2.new(1, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 28),
                 Name = "Section"
             }, ScrolLayers)
 
@@ -980,11 +980,11 @@ function WisHub_Library:CreateWindow(Config)
             local SectionReal = Custom:Create("Frame", {
                 BackgroundColor3 = Color3.fromRGB(30, 28, 38),
                 LayoutOrder = 1,
-                Size = UDim2.new(1, 1, 0, 30),
+                Size = UDim2.new(1, 1, 0, 28),
                 Name = "SectionReal"
             }, Section)
 
-            Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, SectionReal)
+            Custom:Create("UICorner", {CornerRadius = UDim.new(0, 3)}, SectionReal)
 
             local SectionButton = Custom:Create("TextButton", {
                 Font = Custom.Font,
@@ -1028,7 +1028,7 @@ function WisHub_Library:CreateWindow(Config)
             -- Divider line
             local SectionDecideFrame = Custom:Create("Frame", {
                 BackgroundColor3 = Custom.ColorRGB,
-                Position = UDim2.new(0.5, 0, 0, 33),
+                Position = UDim2.new(0.5, 0, 0, 30),
                 Size = UDim2.new(0, 0, 0, 2),
                 Name = "SectionDecideFrame"
             }, Section)
@@ -1080,10 +1080,10 @@ function WisHub_Library:CreateWindow(Config)
 
                 if OpenSection then
                     SectionDecideFrame.Size = UDim2.new(1, 0, 0, 2)
-                    Section.Size = UDim2.new(1, 1, 0, 38 + SectionSizeYWitdh)
+                    Section.Size = UDim2.new(1, 1, 0, 30 + SectionSizeYWitdh)
                     SectionAdd.Size = UDim2.new(1, 0, 0, SectionSizeYWitdh)
                 else
-                    Section.Size = UDim2.new(1, 1, 0, 30)
+                    Section.Size = UDim2.new(1, 1, 0, 28)
                     SectionAdd.Size = UDim2.new(1, 0, 0, 0)
                     SectionDecideFrame.Size = UDim2.new(0, 0, 0, 2)
                 end
@@ -1131,7 +1131,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Paragraph = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(35, 32, 46),
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 35),
+                    Size = UDim2.new(1, 0, 0, 32),
                     Name = "Paragraph",
                 }, SectionAdd)
 
@@ -1141,11 +1141,11 @@ function WisHub_Library:CreateWindow(Config)
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Color3.fromRGB(231, 231, 231),
-                    TextSize = 13,
+                    TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -16, 0, 13),
                     Name = "ParagraphTitle",
                 }, Paragraph)
@@ -1155,18 +1155,18 @@ function WisHub_Library:CreateWindow(Config)
                     Text = Content,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 23),
+                    Position = UDim2.new(0, 10, 0, 19),
                     Size = UDim2.new(1, -16, 0, 20),
                     Name = "ParagraphContent",
                 }, Paragraph)
 
                 ParagraphContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(35, ParagraphContent.AbsoluteSize.Y + 33)
+                    local newHeight = math.max(32, ParagraphContent.AbsoluteSize.Y + 22)
                     Paragraph.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1235,7 +1235,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Button = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(35, 32, 46),
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 35),
+                    Size = UDim2.new(1, 0, 0, 32),
                     Name = "Button"
                 }, SectionAdd)
 
@@ -1245,11 +1245,11 @@ function WisHub_Library:CreateWindow(Config)
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Color3.fromRGB(231, 231, 231),
-                    TextSize = 13,
+                    TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -100, 0, 13),
                     Name = "ButtonTitle",
                 }, Button)
@@ -1259,18 +1259,18 @@ function WisHub_Library:CreateWindow(Config)
                     Text = Content,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 23),
+                    Position = UDim2.new(0, 10, 0, 19),
                     Size = UDim2.new(1, -100, 0, 12),
                     Name = "ButtonContent",
                 }, Button)
 
                 ButtonContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(35, ButtonContent.AbsoluteSize.Y + 33)
+                    local newHeight = math.max(32, ButtonContent.AbsoluteSize.Y + 22)
                     Button.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1288,7 +1288,7 @@ function WisHub_Library:CreateWindow(Config)
                     BackgroundTransparency = 1,
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -15, 0.5, 0),
-                    Size = UDim2.new(0, 25, 0, 25),
+                    Size = UDim2.new(0, 20, 0, 20),
                     Name = "FeatureImg",
                 }, Button)
 
@@ -1341,13 +1341,13 @@ function WisHub_Library:CreateWindow(Config)
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 23),
+                    Position = UDim2.new(0, 10, 0, 17),
                     Size = UDim2.new(1, -100, 0, 12),
                     Name = "ToggleContent",
                 }, Toggle)
 
                 ToggleContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(35, ToggleContent.AbsoluteSize.Y + 33)
+                    local newHeight = math.max(28, ToggleContent.AbsoluteSize.Y + 29)
                     Toggle.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1364,25 +1364,25 @@ function WisHub_Library:CreateWindow(Config)
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BackgroundTransparency = 0.92,
                     Position = UDim2.new(1, -15, 0.5, 0),
-                    Size = UDim2.new(0, 30, 0, 15),
+                    Size = UDim2.new(0, 28, 0, 14),
                     Name = "FeatureFrame2",
                 }, Toggle)
 
-                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, FeatureFrame2)
-                Custom:Create("UIStroke", {Color = Color3.fromRGB(255, 255, 255), Thickness = 2, Transparency = 0.9}, FeatureFrame2)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 7)}, FeatureFrame2)
+                Custom:Create("UIStroke", {Color = Color3.fromRGB(255, 255, 255), Thickness = 1.5, Transparency = 0.85}, FeatureFrame2)
 
                 local ToggleCircle = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(230, 230, 230),
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 0, 0, 0),
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0, 1, 0, 1),
                     Name = "ToggleCircle",
                 }, FeatureFrame2)
 
-                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 15)}, ToggleCircle)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, ToggleCircle)
 
                 local function ToggleAnimation(isOn)
                     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
-                    local targetPos = isOn and UDim2.new(0, 15, 0, 0) or UDim2.new(0, 0, 0, 0)
+                    local targetPos = isOn and UDim2.new(0, 14, 0, 1) or UDim2.new(0, 1, 0, 1)
 
                     TweenService:Create(ToggleTitle, tweenInfo, {TextColor3 = isOn and Custom.ColorRGB or Color3.fromRGB(230, 230, 230)}):Play()
                     TweenService:Create(ToggleCircle, tweenInfo, {Position = targetPos}):Play()
@@ -1419,7 +1419,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Slider = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(35, 32, 46),
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 45),
+                    Size = UDim2.new(1, 0, 0, 42),
                     Name = "Slider",
                 }, SectionAdd)
 
@@ -1433,7 +1433,7 @@ function WisHub_Library:CreateWindow(Config)
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 8),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "SliderTitle",
                 }, Slider)
@@ -1443,12 +1443,12 @@ function WisHub_Library:CreateWindow(Config)
                     Text = Content,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 21),
+                    Position = UDim2.new(0, 10, 0, 19),
                     Size = UDim2.new(1, -180, 0, 12),
                     Name = "SliderContent",
                 }, Slider)
@@ -1457,17 +1457,17 @@ function WisHub_Library:CreateWindow(Config)
                     AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundColor3 = Custom.ColorRGB,
                     Position = UDim2.new(1, -155, 0.5, 0),
-                    Size = UDim2.new(0, 28, 0, 20),
+                    Size = UDim2.new(0, 26, 0, 18),
                     Name = "SliderInput",
                 }, Slider)
 
-                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 2)}, SliderInput)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 3)}, SliderInput)
 
                 local TextBox = Custom:Create("TextBox", {
                     Font = Custom.Font,
                     Text = tostring(Default),
                     TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextSize = 13,
+                    TextSize = 11,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
                     Size = UDim2.new(1, 0, 1, 0),
@@ -1475,32 +1475,31 @@ function WisHub_Library:CreateWindow(Config)
 
                 local SliderFrame = Custom:Create("Frame", {
                     AnchorPoint = Vector2.new(1, 0.5),
-                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                    BackgroundTransparency = 0.8,
+                    BackgroundColor3 = Color3.fromRGB(60, 60, 65),
                     Position = UDim2.new(1, -20, 0.5, 0),
-                    Size = UDim2.new(0, 100, 0, 3),
+                    Size = UDim2.new(0, 100, 0, 4),
                     Name = "SliderFrame",
                 }, Slider)
 
-                Custom:Create("UICorner", {}, SliderFrame)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 2)}, SliderFrame)
 
                 local SliderDraggable = Custom:Create("Frame", {
                     BackgroundColor3 = Custom.ColorRGB,
-                    Size = UDim2.new((Default - Min) / (Max - Min), 0, 0, 1),
+                    Size = UDim2.new((Default - Min) / (Max - Min), 0, 0, 4),
                     Name = "SliderDraggable",
                 }, SliderFrame)
 
-                Custom:Create("UICorner", {}, SliderDraggable)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 2)}, SliderDraggable)
 
                 local SliderCircle = Custom:Create("Frame", {
                     BackgroundColor3 = Custom.ColorRGB,
-                    Position = UDim2.new(1, 4, 0.5, 0),
-                    Size = UDim2.new(0, 8, 0, 8),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    Size = UDim2.new(0, 10, 0, 10),
                     Name = "SliderCircle",
                 }, SliderDraggable)
 
-                Custom:Create("UICorner", {}, SliderCircle)
-                Custom:Create("UIStroke", {Color = Custom.ColorRGB}, SliderCircle)
+                Custom:Create("UICorner", {CornerRadius = UDim.new(0, 5)}, SliderCircle)
+                Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 0}, SliderCircle)
 
                 local Dragging = false
                 local moveConn = nil
@@ -1567,7 +1566,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Input = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(35, 32, 46),
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 35),
+                    Size = UDim2.new(1, 0, 0, 32),
                     Name = "Input",
                 }, SectionAdd)
 
@@ -1577,11 +1576,11 @@ function WisHub_Library:CreateWindow(Config)
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Color3.fromRGB(230, 230, 230),
-                    TextSize = 13,
+                    TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "InputTitle",
                 }, Input)
@@ -1591,18 +1590,18 @@ function WisHub_Library:CreateWindow(Config)
                     Text = Content,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 23),
+                    Position = UDim2.new(0, 10, 0, 19),
                     Size = UDim2.new(1, -180, 0, 12),
                     Name = "InputContent",
                 }, Input)
 
                 InputContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(35, InputContent.AbsoluteSize.Y + 33)
+                    local newHeight = math.max(32, InputContent.AbsoluteSize.Y + 22)
                     Input.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1612,7 +1611,7 @@ function WisHub_Library:CreateWindow(Config)
                     BackgroundColor3 = Color3.fromRGB(45, 42, 56),
                     ClipsDescendants = true,
                     Position = UDim2.new(1, -7, 0.5, 0),
-                    Size = UDim2.new(0, 148, 0, 30),
+                    Size = UDim2.new(0, 148, 0, 26),
                     Name = "InputFrame"
                 }, Input)
 
@@ -1624,11 +1623,11 @@ function WisHub_Library:CreateWindow(Config)
                     PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
                     Text = "",
                     TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 5, 0.5, 0),
-                    Size = UDim2.new(1, -10, 1, -8),
+                    Size = UDim2.new(1, -10, 1, 0),
                     Name = "InputTextBox"
                 }, InputFrame)
 
@@ -1660,7 +1659,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Dropdown = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(35, 32, 46),
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 35),
+                    Size = UDim2.new(1, 0, 0, 32),
                     Name = "Dropdown"
                 }, SectionAdd)
 
@@ -1678,11 +1677,11 @@ function WisHub_Library:CreateWindow(Config)
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Color3.fromRGB(230, 230, 230),
-                    TextSize = 13,
+                    TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "DropdownTitle",
                 }, Dropdown)
@@ -1692,18 +1691,18 @@ function WisHub_Library:CreateWindow(Config)
                     Text = Content,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 23),
+                    Position = UDim2.new(0, 10, 0, 19),
                     Size = UDim2.new(1, -180, 0, 12),
                     Name = "DropdownContent",
                 }, Dropdown)
 
                 DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(35, DropdownContent.AbsoluteSize.Y + 33)
+                    local newHeight = math.max(32, DropdownContent.AbsoluteSize.Y + 22)
                     Dropdown.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1712,7 +1711,7 @@ function WisHub_Library:CreateWindow(Config)
                 local SelectOptionsFrame = Custom:Create("Frame", {
                     BackgroundColor3 = Color3.fromRGB(45, 42, 56),
                     Position = UDim2.new(1, -7, 0.5, 0),
-                    Size = UDim2.new(0, 148, 0, 30),
+                    Size = UDim2.new(0, 148, 0, 26),
                     Name = "SelectOptionsFrame",
                 }, Dropdown)
 
@@ -1723,7 +1722,7 @@ function WisHub_Library:CreateWindow(Config)
                     Text = "Select...",
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextTransparency = 0.4,
-                    TextSize = 12,
+                    TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 8, 0.5, 0),
@@ -1736,7 +1735,7 @@ function WisHub_Library:CreateWindow(Config)
                     BackgroundTransparency = 1,
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -5, 0.5, 0),
-                    Size = UDim2.new(0, 18, 0, 18),
+                    Size = UDim2.new(0, 16, 0, 16),
                     Name = "OptionImg",
                 }, SelectOptionsFrame)
 
