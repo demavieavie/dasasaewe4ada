@@ -230,6 +230,25 @@ function WisHub_Library:CreateWindow(Config)
     local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
     local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
 
+    -- Color palette (consistent throughout)
+    local Colors = {
+        MainBg = Color3.fromRGB(18, 16, 24),
+        RowBg = Color3.fromRGB(32, 28, 44),          -- Slightly darker row bg for glass effect
+        RowBgHover = Color3.fromRGB(38, 34, 52),
+        RowBgSelected = Color3.fromRGB(45, 40, 65),
+        TabBg = Color3.fromRGB(30, 28, 38),
+        TabBgActive = Color3.fromRGB(40, 36, 58),
+        DropdownBg = Color3.fromRGB(22, 18, 32),     -- Darker for dropdown popup
+        DropdownOption = Color3.fromRGB(32, 28, 44),
+        DropdownOptionHover = Color3.fromRGB(40, 36, 58),
+        BorderSubtle = Color3.fromRGB(55, 45, 90),  -- Subtle purple border
+        BorderHighlight = Color3.fromRGB(80, 65, 130), -- Highlighted border
+        TextTitle = Color3.fromRGB(235, 235, 245),   -- Near-white for titles
+        TextDesc = Color3.fromRGB(155, 155, 165),    -- Medium gray for descriptions
+        TextMuted = Color3.fromRGB(120, 120, 130),  -- Muted text
+        Purple = Custom.ColorRGB,
+    }
+
     -- Main GUI
     local WisHubGui = Custom:Create("ScreenGui", {
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -252,15 +271,15 @@ function WisHub_Library:CreateWindow(Config)
     -- Main container
     local Main = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = Color3.fromRGB(18, 16, 24),
-        BorderColor3 = Color3.fromRGB(70, 50, 110),
+        BackgroundColor3 = Colors.MainBg,
+        BorderColor3 = Colors.BorderSubtle,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = SizeUi,
         Name = "Main"
     }, DropShadow)
 
     Custom:Create("UICorner", {}, Main)
-    Custom:Create("UIStroke", {Color = Color3.fromRGB(70, 50, 110), Thickness = 1.6}, Main)
+    Custom:Create("UIStroke", {Color = Colors.BorderSubtle, Thickness = 1.5}, Main)
 
     -- Top bar
     local Top = Custom:Create("Frame", {
@@ -448,7 +467,7 @@ function WisHub_Library:CreateWindow(Config)
     }, LayersTab)
 
     Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, SearchTab)
-    Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 1, Transparency = 0.55}, SearchTab)
+    Custom:Create("UIStroke", {Color = Colors.BorderSubtle, Thickness = 1, Transparency = 0.3}, SearchTab) -- Subtle border, not bright purple
 
     local SearchIcon = Custom:Create("ImageLabel", {
         Image = "rbxassetid://3926305904",
@@ -480,7 +499,7 @@ function WisHub_Library:CreateWindow(Config)
         PlaceholderText = "Search tabs & sections...",
         PlaceholderColor3 = Color3.fromRGB(140, 140, 148),
         Text = "",
-        TextColor3 = Color3.fromRGB(235, 235, 240),
+        TextColor3 = Colors.TextTitle,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
@@ -492,7 +511,7 @@ function WisHub_Library:CreateWindow(Config)
 
     -- Search results dropdown
     local SearchResults = Custom:Create("Frame", {
-        BackgroundColor3 = Color3.fromRGB(25, 22, 35),
+        BackgroundColor3 = Colors.DropdownBg,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 30),
         Size = UDim2.new(1, 0, 0, 0),
@@ -503,7 +522,7 @@ function WisHub_Library:CreateWindow(Config)
     }, SearchTab)
 
     Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, SearchResults)
-    Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 1, Transparency = 0.5}, SearchResults)
+    Custom:Create("UIStroke", {Color = Colors.BorderHighlight, Thickness = 1, Transparency = 0.4}, SearchResults)
 
     local SearchScroll = Custom:Create("ScrollingFrame", {
         CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -534,7 +553,7 @@ function WisHub_Library:CreateWindow(Config)
         local y = 0
         for i, result in ipairs(results) do
             local resultBtn = Custom:Create("Frame", {
-                BackgroundColor3 = i == 1 and Color3.fromRGB(45, 42, 56) or Color3.fromRGB(35, 32, 46),
+                BackgroundColor3 = i == 1 and Colors.RowBgSelected or Colors.RowBg,
                 Size = UDim2.new(1, 0, 0, 28),
                 LayoutOrder = i,
                 Name = "Result"
@@ -554,7 +573,7 @@ function WisHub_Library:CreateWindow(Config)
             local resultText = Custom:Create("TextLabel", {
                 Font = Custom.Font,
                 Text = result.tabName .. " > " .. result.sectionName,
-                TextColor3 = Color3.fromRGB(235, 235, 240),
+                TextColor3 = Colors.TextTitle,
                 TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 BackgroundTransparency = 1,
@@ -566,7 +585,7 @@ function WisHub_Library:CreateWindow(Config)
             local typeText = Custom:Create("TextLabel", {
                 Font = Custom.FontBody,
                 Text = result.type,
-                TextColor3 = Color3.fromRGB(150, 150, 160),
+                TextColor3 = Colors.TextMuted,
                 TextSize = 10,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 BackgroundTransparency = 1,
@@ -751,7 +770,7 @@ function WisHub_Library:CreateWindow(Config)
 
     local ConfirmBox = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = Color3.fromRGB(18, 16, 24),
+        BackgroundColor3 = Colors.MainBg,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(0, 250, 0, 120),
         ZIndex = 21,
@@ -759,7 +778,7 @@ function WisHub_Library:CreateWindow(Config)
     }, ConfirmHolder)
 
     Custom:Create("UICorner", {CornerRadius = UDim.new(0, 8)}, ConfirmBox)
-    Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 1.5, Transparency = 0.15}, ConfirmBox)
+    Custom:Create("UIStroke", {Color = Colors.BorderHighlight, Thickness = 1.5, Transparency = 0.3}, ConfirmBox)
 
     Custom:Create("TextLabel", {
         Font = Custom.Font,
@@ -776,7 +795,7 @@ function WisHub_Library:CreateWindow(Config)
     Custom:Create("TextLabel", {
         Font = Custom.Font,
         Text = "Are you sure you want to close?",
-        TextColor3 = Color3.fromRGB(175, 175, 185),
+        TextColor3 = Colors.TextDesc,
         TextSize = 13,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 44),
@@ -791,7 +810,7 @@ function WisHub_Library:CreateWindow(Config)
         TextColor3 = Color3.fromRGB(235, 235, 235),
         TextSize = 14,
         AnchorPoint = Vector2.new(0, 1),
-        BackgroundColor3 = Color3.fromRGB(45, 42, 56),
+        BackgroundColor3 = Colors.RowBg,
         Position = UDim2.new(0, 16, 1, -16),
         Size = UDim2.new(0.5, -24, 0, 34),
         ZIndex = 22,
@@ -871,7 +890,7 @@ function WisHub_Library:CreateWindow(Config)
 
         -- Optimized Tab button
         local Tab = Custom:Create("Frame", {
-            BackgroundColor3 = Color3.fromRGB(30, 28, 38),
+            BackgroundColor3 = Colors.TabBg,
             LayoutOrder = CountTab,
             Size = UDim2.new(1, 0, 0, 28),
             Name = "Tab",
@@ -914,7 +933,7 @@ function WisHub_Library:CreateWindow(Config)
         if CountTab == 0 then
             LayersPageLayout:JumpToIndex(0)
             NameTab.Text = _Name
-            Tab.BackgroundColor3 = Color3.fromRGB(40, 38, 50)
+            Tab.BackgroundColor3 = Colors.TabBgActive
 
             local ChooseFrame = Custom:Create("Frame", {
                 BackgroundColor3 = Custom.ColorRGB,
@@ -939,11 +958,11 @@ function WisHub_Library:CreateWindow(Config)
             if FrameChoose and Tab.LayoutOrder ~= LayersPageLayout.CurrentPage.LayoutOrder then
                 for _, TabFrame in pairs(ScrollTab:GetChildren()) do
                     if TabFrame:IsA("Frame") and TabFrame.Name == "Tab" then
-                        TabFrame.BackgroundColor3 = Color3.fromRGB(30, 28, 38)
+                        TabFrame.BackgroundColor3 = Colors.TabBg
                     end
                 end
 
-                Tab.BackgroundColor3 = Color3.fromRGB(40, 38, 50)
+                Tab.BackgroundColor3 = Colors.TabBgActive
 
                 local targetY = 8 + (31 * Tab.LayoutOrder)
                 TweenService:Create(FrameChoose, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
@@ -978,7 +997,7 @@ function WisHub_Library:CreateWindow(Config)
 
             -- Section header
             local SectionReal = Custom:Create("Frame", {
-                BackgroundColor3 = Color3.fromRGB(30, 28, 38),
+                BackgroundColor3 = Colors.TabBg,
                 LayoutOrder = 1,
                 Size = UDim2.new(1, 1, 0, 28),
                 Name = "SectionReal"
@@ -1015,7 +1034,7 @@ function WisHub_Library:CreateWindow(Config)
             local SectionTitle = Custom:Create("TextLabel", {
                 Font = Custom.Font,
                 Text = Title,
-                TextColor3 = Color3.fromRGB(230, 230, 230),
+                TextColor3 = Colors.TextTitle,
                 TextSize = 13,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 AnchorPoint = Vector2.new(0, 0.5),
@@ -1027,7 +1046,7 @@ function WisHub_Library:CreateWindow(Config)
 
             -- Divider line
             local SectionDecideFrame = Custom:Create("Frame", {
-                BackgroundColor3 = Custom.ColorRGB,
+                BackgroundColor3 = Colors.BorderSubtle,
                 Position = UDim2.new(0.5, 0, 0, 30),
                 Size = UDim2.new(0, 0, 0, 2),
                 Name = "SectionDecideFrame"
@@ -1035,7 +1054,7 @@ function WisHub_Library:CreateWindow(Config)
             Custom:Create("UIGradient", {
                 Color = ColorSequence.new{
                     ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
-                    ColorSequenceKeypoint.new(0.5, Custom.ColorRGB),
+                    ColorSequenceKeypoint.new(0.5, Colors.BorderHighlight),
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
                 }
             }, SectionDecideFrame)
@@ -1129,7 +1148,7 @@ function WisHub_Library:CreateWindow(Config)
                 local Content = Config[2] or Config.Content or ""
 
                 local Paragraph = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
                     Size = UDim2.new(1, 0, 0, 32),
                     Name = "Paragraph",
@@ -1140,7 +1159,7 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(231, 231, 231),
+                    TextColor3 = Colors.TextTitle,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
@@ -1153,8 +1172,7 @@ function WisHub_Library:CreateWindow(Config)
                 local ParagraphContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextDesc,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -1184,9 +1202,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Title = Config[1] or Config.Title or ""
 
                 local Seperator = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(50, 50, 55),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 30),
+                    Size = UDim2.new(1, 0, 0, 28),
                     Name = "Seperator",
                 }, SectionAdd)
 
@@ -1195,10 +1213,10 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(180, 180, 185),
+                    TextColor3 = Colors.TextDesc,
                     TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
                     TextStrokeTransparency = 0.8,
-                    TextSize = 14,
+                    TextSize = 13,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 12, 0, 0),
@@ -1214,7 +1232,7 @@ function WisHub_Library:CreateWindow(Config)
 
             function Item:AddLine()
                 local Line = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(60, 60, 65),
+                    BackgroundColor3 = Colors.BorderSubtle,
                     LayoutOrder = ItemCount,
                     Size = UDim2.new(1, 0, 0, 7),
                     Name = "Line",
@@ -1233,9 +1251,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Callback = Config[4] or Config.Callback or function() end
 
                 local Button = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 32),
+                    Size = UDim2.new(1, 0, 0, 30),
                     Name = "Button"
                 }, SectionAdd)
 
@@ -1244,12 +1262,12 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(231, 231, 231),
+                    TextColor3 = Colors.TextTitle,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
+                    Position = UDim2.new(0, 10, 0, 5),
                     Size = UDim2.new(1, -100, 0, 13),
                     Name = "ButtonTitle",
                 }, Button)
@@ -1257,20 +1275,19 @@ function WisHub_Library:CreateWindow(Config)
                 local ButtonContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextDesc,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 19),
-                    Size = UDim2.new(1, -100, 0, 12),
+                    Position = UDim2.new(0, 10, 0, 18),
+                    Size = UDim2.new(1, -100, 0, 10),
                     Name = "ButtonContent",
                 }, Button)
 
                 ButtonContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(32, ButtonContent.AbsoluteSize.Y + 22)
+                    local newHeight = math.max(30, ButtonContent.AbsoluteSize.Y + 20)
                     Button.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1310,9 +1327,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Funcs_Toggle = {Value = Default}
 
                 local Toggle = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 35),
+                    Size = UDim2.new(1, 0, 0, 32),
                     Name = "Toggle",
                 }, SectionAdd)
 
@@ -1321,12 +1338,12 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextSize = 13,
-                    TextColor3 = Color3.fromRGB(231, 231, 231),
+                    TextSize = 12,
+                    TextColor3 = Colors.TextTitle,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 10, 0, 6),
                     Size = UDim2.new(1, -100, 0, 13),
                     Name = "ToggleTitle",
                 }, Toggle)
@@ -1334,9 +1351,8 @@ function WisHub_Library:CreateWindow(Config)
                 local ToggleContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextSize = 12,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextSize = 11,
+                    TextColor3 = Colors.TextDesc,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
@@ -1347,7 +1363,7 @@ function WisHub_Library:CreateWindow(Config)
                 }, Toggle)
 
                 ToggleContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(28, ToggleContent.AbsoluteSize.Y + 29)
+                    local newHeight = math.max(32, ToggleContent.AbsoluteSize.Y + 19)
                     Toggle.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
@@ -1361,18 +1377,17 @@ function WisHub_Library:CreateWindow(Config)
                 }, Toggle)
 
                 local FeatureFrame2 = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                    BackgroundTransparency = 0.92,
+                    BackgroundColor3 = Color3.fromRGB(50, 50, 60),
                     Position = UDim2.new(1, -15, 0.5, 0),
                     Size = UDim2.new(0, 28, 0, 14),
                     Name = "FeatureFrame2",
                 }, Toggle)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 7)}, FeatureFrame2)
-                Custom:Create("UIStroke", {Color = Color3.fromRGB(255, 255, 255), Thickness = 1.5, Transparency = 0.85}, FeatureFrame2)
+                Custom:Create("UIStroke", {Color = Color3.fromRGB(80, 80, 100), Thickness = 1, Transparency = 0.5}, FeatureFrame2)
 
                 local ToggleCircle = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+                    BackgroundColor3 = Color3.fromRGB(180, 180, 190),
                     Size = UDim2.new(0, 12, 0, 12),
                     Position = UDim2.new(0, 1, 0, 1),
                     Name = "ToggleCircle",
@@ -1384,9 +1399,9 @@ function WisHub_Library:CreateWindow(Config)
                     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
                     local targetPos = isOn and UDim2.new(0, 14, 0, 1) or UDim2.new(0, 1, 0, 1)
 
-                    TweenService:Create(ToggleTitle, tweenInfo, {TextColor3 = isOn and Custom.ColorRGB or Color3.fromRGB(230, 230, 230)}):Play()
+                    TweenService:Create(ToggleTitle, tweenInfo, {TextColor3 = isOn and Custom.ColorRGB or Colors.TextTitle}):Play()
                     TweenService:Create(ToggleCircle, tweenInfo, {Position = targetPos}):Play()
-                    TweenService:Create(FeatureFrame2, tweenInfo, {BackgroundColor3 = isOn and Custom.ColorRGB or Color3.fromRGB(255, 255, 255)}):Play()
+                    TweenService:Create(FeatureFrame2, tweenInfo, {BackgroundColor3 = isOn and Custom.ColorRGB or Color3.fromRGB(50, 50, 60)}):Play()
                 end
 
                 ToggleButton.Activated:Connect(function()
@@ -1417,9 +1432,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Funcs_Slider = {Value = Default}
 
                 local Slider = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 42),
+                    Size = UDim2.new(1, 0, 0, 38),
                     Name = "Slider",
                 }, SectionAdd)
 
@@ -1428,12 +1443,12 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(230, 230, 230),
-                    TextSize = 13,
+                    TextColor3 = Colors.TextTitle,
+                    TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
+                    Position = UDim2.new(0, 10, 0, 5),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "SliderTitle",
                 }, Slider)
@@ -1441,14 +1456,13 @@ function WisHub_Library:CreateWindow(Config)
                 local SliderContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextDesc,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 19),
+                    Position = UDim2.new(0, 10, 0, 17),
                     Size = UDim2.new(1, -180, 0, 12),
                     Name = "SliderContent",
                 }, Slider)
@@ -1475,7 +1489,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 local SliderFrame = Custom:Create("Frame", {
                     AnchorPoint = Vector2.new(1, 0.5),
-                    BackgroundColor3 = Color3.fromRGB(60, 60, 65),
+                    BackgroundColor3 = Color3.fromRGB(45, 45, 55),
                     Position = UDim2.new(1, -20, 0.5, 0),
                     Size = UDim2.new(0, 100, 0, 4),
                     Name = "SliderFrame",
@@ -1564,9 +1578,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Funcs_Input = {Value = Default}
 
                 local Input = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 32),
+                    Size = UDim2.new(1, 0, 0, 30),
                     Name = "Input",
                 }, SectionAdd)
 
@@ -1575,12 +1589,12 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(230, 230, 230),
+                    TextColor3 = Colors.TextTitle,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
+                    Position = UDim2.new(0, 10, 0, 5),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "InputTitle",
                 }, Input)
@@ -1588,41 +1602,41 @@ function WisHub_Library:CreateWindow(Config)
                 local InputContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextDesc,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 19),
-                    Size = UDim2.new(1, -180, 0, 12),
+                    Position = UDim2.new(0, 10, 0, 17),
+                    Size = UDim2.new(1, -180, 0, 10),
                     Name = "InputContent",
                 }, Input)
 
                 InputContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(32, InputContent.AbsoluteSize.Y + 22)
+                    local newHeight = math.max(30, InputContent.AbsoluteSize.Y + 20)
                     Input.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
 
                 local InputFrame = Custom:Create("Frame", {
                     AnchorPoint = Vector2.new(1, 0.5),
-                    BackgroundColor3 = Color3.fromRGB(45, 42, 56),
+                    BackgroundColor3 = Colors.DropdownBg,
                     ClipsDescendants = true,
                     Position = UDim2.new(1, -7, 0.5, 0),
-                    Size = UDim2.new(0, 148, 0, 26),
+                    Size = UDim2.new(0, 148, 0, 24),
                     Name = "InputFrame"
                 }, Input)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, InputFrame)
+                Custom:Create("UIStroke", {Color = Colors.BorderSubtle, Thickness = 1, Transparency = 0.3}, InputFrame)
 
                 local InputTextBox = Custom:Create("TextBox", {
                     Font = Custom.Font,
                     PlaceholderText = "Write your input there",
-                    PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
+                    PlaceholderColor3 = Colors.TextMuted,
                     Text = "",
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    TextColor3 = Colors.TextTitle,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     BackgroundTransparency = 1,
@@ -1657,9 +1671,9 @@ function WisHub_Library:CreateWindow(Config)
                 local Funcs_Dropdown = {Value = Default, Options = Options}
 
                 local Dropdown = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(35, 32, 46),
+                    BackgroundColor3 = Colors.RowBg,
                     LayoutOrder = ItemCount,
-                    Size = UDim2.new(1, 0, 0, 32),
+                    Size = UDim2.new(1, 0, 0, 30),
                     Name = "Dropdown"
                 }, SectionAdd)
 
@@ -1676,12 +1690,12 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
-                    TextColor3 = Color3.fromRGB(230, 230, 230),
+                    TextColor3 = Colors.TextTitle,
                     TextSize = 12,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Top,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
+                    Position = UDim2.new(0, 10, 0, 5),
                     Size = UDim2.new(1, -180, 0, 13),
                     Name = "DropdownTitle",
                 }, Dropdown)
@@ -1689,39 +1703,38 @@ function WisHub_Library:CreateWindow(Config)
                 local DropdownContent = Custom:Create("TextLabel", {
                     Font = Custom.FontBody,
                     Text = Content,
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextDesc,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Bottom,
                     TextWrapped = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 19),
-                    Size = UDim2.new(1, -180, 0, 12),
+                    Position = UDim2.new(0, 10, 0, 17),
+                    Size = UDim2.new(1, -180, 0, 10),
                     Name = "DropdownContent",
                 }, Dropdown)
 
                 DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    local newHeight = math.max(32, DropdownContent.AbsoluteSize.Y + 22)
+                    local newHeight = math.max(30, DropdownContent.AbsoluteSize.Y + 20)
                     Dropdown.Size = UDim2.new(1, 0, 0, newHeight)
                     UpdateSizeSection()
                 end)
 
-                -- Dropdown selector (simplified - just shows current selection)
+                -- Dropdown selector
                 local SelectOptionsFrame = Custom:Create("Frame", {
-                    BackgroundColor3 = Color3.fromRGB(45, 42, 56),
+                    BackgroundColor3 = Colors.DropdownBg,
                     Position = UDim2.new(1, -7, 0.5, 0),
-                    Size = UDim2.new(0, 148, 0, 26),
+                    Size = UDim2.new(0, 148, 0, 24),
                     Name = "SelectOptionsFrame",
                 }, Dropdown)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, SelectOptionsFrame)
+                Custom:Create("UIStroke", {Color = Colors.BorderSubtle, Thickness = 1, Transparency = 0.3}, SelectOptionsFrame)
 
                 local OptionSelecting = Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = "Select...",
-                    TextColor3 = Color3.fromRGB(255, 255, 255),
-                    TextTransparency = 0.4,
+                    TextColor3 = Colors.TextMuted,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     BackgroundTransparency = 1,
@@ -1739,7 +1752,7 @@ function WisHub_Library:CreateWindow(Config)
                     Name = "OptionImg",
                 }, SelectOptionsFrame)
 
-                -- Options popup
+                -- Options popup - Fixed styling to match UI theme
                 local DropdownPopup = nil
                 local popupOpen = false
 
@@ -1748,8 +1761,8 @@ function WisHub_Library:CreateWindow(Config)
 
                     popupOpen = true
                     DropdownPopup = Custom:Create("Frame", {
-                        BackgroundColor3 = Color3.fromRGB(25, 22, 35),
-                        Position = UDim2.new(0, 0, 1, 5),
+                        BackgroundColor3 = Colors.DropdownBg,  -- Dark purple-black
+                        Position = UDim2.new(0, 0, 1, 4),
                         Size = UDim2.new(1, 0, 0, 0),
                         ClipsDescendants = true,
                         ZIndex = 100,
@@ -1757,7 +1770,8 @@ function WisHub_Library:CreateWindow(Config)
                     }, Dropdown)
 
                     Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, DropdownPopup)
-                    Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 1, Transparency = 0.5}, DropdownPopup)
+                    -- Subtle purple/gray border, not bright
+                    Custom:Create("UIStroke", {Color = Colors.BorderHighlight, Thickness = 1, Transparency = 0.5}, DropdownPopup)
 
                     local popupScroll = Custom:Create("ScrollingFrame", {
                         CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -1774,12 +1788,13 @@ function WisHub_Library:CreateWindow(Config)
                     }, popupScroll)
 
                     local totalHeight = 0
+                    local itemHeight = 26  -- Compact item height
                     for _, optName in ipairs(Funcs_Dropdown.Options) do
                         local isSelected = table.find(Funcs_Dropdown.Value, optName) ~= nil
 
                         local optBtn = Custom:Create("Frame", {
-                            BackgroundColor3 = isSelected and Color3.fromRGB(45, 42, 56) or Color3.fromRGB(35, 32, 46),
-                            Size = UDim2.new(1, 0, 0, 26),
+                            BackgroundColor3 = isSelected and Colors.RowBgSelected or Colors.DropdownOption,
+                            Size = UDim2.new(1, 0, 0, itemHeight),
                             Name = "Option"
                         }, popupScroll)
 
@@ -1798,7 +1813,7 @@ function WisHub_Library:CreateWindow(Config)
                         Custom:Create("TextLabel", {
                             Font = Custom.Font,
                             Text = optName,
-                            TextColor3 = Color3.fromRGB(235, 235, 240),
+                            TextColor3 = isSelected and Colors.TextTitle or Colors.TextDesc,
                             TextSize = 12,
                             TextXAlignment = Enum.TextXAlignment.Left,
                             BackgroundTransparency = 1,
@@ -1828,11 +1843,13 @@ function WisHub_Library:CreateWindow(Config)
                             end
                         end)
 
-                        totalHeight = totalHeight + 28
+                        totalHeight = totalHeight + itemHeight + 2
                     end
 
                     popupScroll.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-                    DropdownPopup.Size = UDim2.new(1, 0, 0, math.min(totalHeight, 150))
+                    -- Height fits content, max only if many items
+                    local maxPopupHeight = 130
+                    DropdownPopup.Size = UDim2.new(1, 0, 0, math.min(totalHeight, maxPopupHeight))
 
                     -- Click outside to close
                     local closeConn = nil
@@ -1863,6 +1880,7 @@ function WisHub_Library:CreateWindow(Config)
                     Funcs_Dropdown.Value = Value or Funcs_Dropdown.Value
                     local displayText = table.concat(Funcs_Dropdown.Value, ", ")
                     OptionSelecting.Text = displayText ~= "" and displayText or "Select..."
+                    OptionSelecting.TextColor3 = displayText ~= "" and Colors.TextTitle or Colors.TextMuted
                     Callback(Funcs_Dropdown.Value)
                 end
 
