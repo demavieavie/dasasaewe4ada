@@ -425,6 +425,7 @@ function WisHub_Library:CreateWindow(Config)
 
     local LayersReal = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0, 1),
+        BackgroundTransparency = 1,
         ClipsDescendants = true,
         Position = UDim2.new(0, 0, 1, 0),
         Size = UDim2.new(1, 0, 1, -33),
@@ -460,6 +461,7 @@ function WisHub_Library:CreateWindow(Config)
 
     -- ENHANCED SEARCH with fuzzy matching and navigation
     local SearchTab = Custom:Create("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0),
         BackgroundColor3 = Color3.fromRGB(30, 30, 40),
         Position = UDim2.new(0.5, 0, 0, 2),
         Size = UDim2.new(1, -4, 0, 26),
@@ -487,7 +489,7 @@ function WisHub_Library:CreateWindow(Config)
         TextColor3 = Color3.fromRGB(140, 140, 148),
         TextSize = 10,
         BackgroundTransparency = 1,
-        AnchorPoint = Vector2.new(0, 0.5),
+        AnchorPoint = Vector2.new(1, 0.5),
         Position = UDim2.new(1, -8, 0.5, 0),
         Size = UDim2.new(0, 16, 0, 16),
         Visible = false,
@@ -503,6 +505,7 @@ function WisHub_Library:CreateWindow(Config)
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
+        AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 28, 0.5, 0),
         Size = UDim2.new(1, -45, 1, 0),
@@ -564,6 +567,7 @@ function WisHub_Library:CreateWindow(Config)
             local icon = Custom:Create("ImageLabel", {
                 Image = result.icon or "",
                 ImageColor3 = Custom.ColorRGB,
+                AnchorPoint = Vector2.new(0, 0.5),
                 BackgroundTransparency = 1,
                 Position = UDim2.new(0, 8, 0.5, 0),
                 Size = UDim2.new(0, 14, 0, 14),
@@ -761,6 +765,7 @@ function WisHub_Library:CreateWindow(Config)
 
     -- Close confirmation (simplified)
     local ConfirmHolder = Custom:Create("Frame", {
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, 0),
         ZIndex = 20,
@@ -1046,6 +1051,7 @@ function WisHub_Library:CreateWindow(Config)
 
             -- Divider line
             local SectionDecideFrame = Custom:Create("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0),
                 BackgroundColor3 = Colors.BorderSubtle,
                 Position = UDim2.new(0.5, 0, 0, 30),
                 Size = UDim2.new(0, 0, 0, 2),
@@ -1061,6 +1067,7 @@ function WisHub_Library:CreateWindow(Config)
 
             -- Content area
             local SectionAdd = Custom:Create("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0),
                 BackgroundTransparency = 1,
                 ClipsDescendants = true,
                 LayoutOrder = 1,
@@ -1099,7 +1106,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 if OpenSection then
                     SectionDecideFrame.Size = UDim2.new(1, 0, 0, 2)
-                    Section.Size = UDim2.new(1, 1, 0, 30 + SectionSizeYWitdh)
+                    Section.Size = UDim2.new(1, 1, 0, 38 + SectionSizeYWitdh)
                     SectionAdd.Size = UDim2.new(1, 0, 0, SectionSizeYWitdh)
                 else
                     Section.Size = UDim2.new(1, 1, 0, 28)
@@ -1377,6 +1384,7 @@ function WisHub_Library:CreateWindow(Config)
                 }, Toggle)
 
                 local FeatureFrame2 = Custom:Create("Frame", {
+                    AnchorPoint = Vector2.new(1, 0.5),
                     BackgroundColor3 = Color3.fromRGB(50, 50, 60),
                     Position = UDim2.new(1, -15, 0.5, 0),
                     Size = UDim2.new(0, 28, 0, 14),
@@ -1506,6 +1514,7 @@ function WisHub_Library:CreateWindow(Config)
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 2)}, SliderDraggable)
 
                 local SliderCircle = Custom:Create("Frame", {
+                    AnchorPoint = Vector2.new(0.5, 0.5),
                     BackgroundColor3 = Custom.ColorRGB,
                     Position = UDim2.new(1, 0, 0.5, 0),
                     Size = UDim2.new(0, 10, 0, 10),
@@ -1529,7 +1538,7 @@ function WisHub_Library:CreateWindow(Config)
                     Funcs_Slider.Value = Value
                     TextBox.Text = tostring(Value)
                     local scale = (Value - Min) / (Max - Min)
-                    TweenService:Create(SliderDraggable, TweenInfo.new(0.1), {Size = UDim2.new(scale, 0, 0, 1)}):Play()
+                    TweenService:Create(SliderDraggable, TweenInfo.new(0.1), {Size = UDim2.new(scale, 0, 1, 0)}):Play()
                 end
 
                 SliderFrame.InputBegan:Connect(function(Input)
@@ -1639,6 +1648,7 @@ function WisHub_Library:CreateWindow(Config)
                     TextColor3 = Colors.TextTitle,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 5, 0.5, 0),
                     Size = UDim2.new(1, -10, 1, 0),
@@ -1722,6 +1732,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 -- Dropdown selector
                 local SelectOptionsFrame = Custom:Create("Frame", {
+                    AnchorPoint = Vector2.new(1, 0.5),
                     BackgroundColor3 = Colors.DropdownBg,
                     Position = UDim2.new(1, -7, 0.5, 0),
                     Size = UDim2.new(0, 148, 0, 24),
@@ -1737,6 +1748,7 @@ function WisHub_Library:CreateWindow(Config)
                     TextColor3 = Colors.TextMuted,
                     TextSize = 11,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 8, 0.5, 0),
                     Size = UDim2.new(1, -30, 1, 0),
@@ -1802,6 +1814,7 @@ function WisHub_Library:CreateWindow(Config)
 
                         if isSelected then
                             local checkmark = Custom:Create("Frame", {
+                                AnchorPoint = Vector2.new(0, 0.5),
                                 BackgroundColor3 = Custom.ColorRGB,
                                 Position = UDim2.new(0, 4, 0.5, 0),
                                 Size = UDim2.new(0, 4, 0, 12),
