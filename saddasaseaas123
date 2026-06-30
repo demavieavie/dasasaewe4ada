@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
+local TextService = game:GetService("TextService")
 
 local Custom = {} do
   Custom.ColorRGB = Color3.fromRGB(183, 0, 226)
@@ -421,7 +422,7 @@ function WisHub_Library:CreateWindow(Config)
   local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(600, 350)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
   local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
-  local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://121207919642656"
+  local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105474892475454"
 
   local Funcs = {}
 
@@ -466,6 +467,15 @@ function WisHub_Library:CreateWindow(Config)
   }, DropShadow)
 
   Custom:Create("UICorner", {}, Main)
+
+  Custom:Create("UIGradient", {
+    Color = ColorSequence.new{
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 14, 24)),
+      ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 8, 38))
+    },
+    Rotation = 16
+  }, Main)
 
   Custom:Create("UIStroke", {
     Color = Color3.fromRGB(70, 50, 110),
@@ -535,6 +545,7 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundColor3 = Color3.fromRGB(33, 30, 46),
     BackgroundTransparency = 0.18,
     BorderSizePixel = 0,
+    ClipsDescendants = true,
     Position = UDim2.new(0, 42, 0.5, 0),
     Size = UDim2.new(0, 150, 0, 22),
     Name = "DiscordPill"
@@ -552,7 +563,7 @@ function WisHub_Library:CreateWindow(Config)
 
   local DiscordIcon = Custom:Create("ImageLabel", {
     Image = DiscordLogo,
-    ImageColor3 = Color3.fromRGB(88, 101, 242),
+    ImageColor3 = Color3.fromRGB(255, 255, 255),
     ScaleType = Enum.ScaleType.Fit,
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
@@ -568,6 +579,7 @@ function WisHub_Library:CreateWindow(Config)
     TextColor3 = Color3.fromRGB(235, 235, 240),
     TextSize = 12,
     TextXAlignment = Enum.TextXAlignment.Left,
+    TextTruncate = Enum.TextTruncate.AtEnd,
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     Position = UDim2.new(0, 27, 0, 0),
@@ -575,13 +587,15 @@ function WisHub_Library:CreateWindow(Config)
     Name = "DiscordText"
   }, DiscordPill)
 
+  local DiscordTextWidth = TextService:GetTextSize(DiscordInvite, 12, Custom.Font, Vector2.new(220, 22)).X
+
   if DiscordLogo == "" then
     DiscordIcon.Visible = false
     DiscordText.Position = UDim2.new(0, 11, 0, 0)
     DiscordText.Size = UDim2.new(1, -16, 1, 0)
-    DiscordPill.Size = UDim2.new(0, DiscordText.TextBounds.X + 22, 0, 22)
+    DiscordPill.Size = UDim2.new(0, math.clamp(DiscordTextWidth + 22, 58, 178), 0, 22)
   else
-    DiscordPill.Size = UDim2.new(0, DiscordText.TextBounds.X + 38, 0, 22)
+    DiscordPill.Size = UDim2.new(0, math.clamp(DiscordTextWidth + 38, 72, 190), 0, 22)
   end
 
   local DiscordButton = Custom:Create("TextButton", {
@@ -1915,8 +1929,8 @@ function WisHub_Library:CreateWindow(Config)
 
         local Button = Custom:Create("Frame", {
 					Name = "Button",
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.955,
+					BackgroundColor3 = Color3.fromRGB(120, 35, 150),
+					BackgroundTransparency = 0.9,
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
 					Size = UDim2.new(1, 0, 0, 35)
@@ -1925,6 +1939,34 @@ function WisHub_Library:CreateWindow(Config)
         Custom:Create("UICorner", {
           CornerRadius = UDim.new(0, 4)
         }, Button)
+
+        Custom:Create("UIStroke", {
+          Color = Custom.ColorRGB,
+          Thickness = 1,
+          Transparency = 0.62
+        }, Button)
+
+        Custom:Create("UIGradient", {
+          Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(145, 32, 185)),
+            ColorSequenceKeypoint.new(0.45, Color3.fromRGB(45, 33, 62)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+          },
+          Rotation = 0
+        }, Button)
+
+        local ButtonAccent = Custom:Create("Frame", {
+          BackgroundColor3 = Custom.ColorRGB,
+          BackgroundTransparency = 0.18,
+          BorderSizePixel = 0,
+          Position = UDim2.new(0, 0, 0, 6),
+          Size = UDim2.new(0, 2, 1, -12),
+          Name = "ButtonAccent"
+        }, Button)
+
+        Custom:Create("UICorner", {
+          CornerRadius = UDim.new(0, 2)
+        }, ButtonAccent)
 
         Custom:Create("TextLabel", {
 					Name = "ButtonTitle",
@@ -1938,7 +1980,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 7),
-					Size = UDim2.new(1, -70, 0, 13)
+					Size = UDim2.new(1, -90, 0, 13)
 				}, Button)
 
         local ButtonContent = Custom:Create("TextLabel", {
@@ -1954,12 +1996,12 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 21),
-					Size = UDim2.new(1, -70, 0, 12)
+					Size = UDim2.new(1, -90, 0, 12)
 				}, Button)
 
         local function UpdateButtonSize()
           local _Height = 12 + (12 * (ButtonContent.TextBounds.X // ButtonContent.AbsoluteSize.X))
-          ButtonContent.Size = UDim2.new(1, -70, 0, _Height)
+          ButtonContent.Size = UDim2.new(1, -90, 0, _Height)
           
           Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 30)
         end
@@ -1989,12 +2031,22 @@ function WisHub_Library:CreateWindow(Config)
         local FeatureFrame1 = Custom:Create("Frame", {
 					Name = "FeatureFrame",
 					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-					BackgroundTransparency = 0.999,
+					BackgroundColor3 = Custom.ColorRGB,
+					BackgroundTransparency = 0.42,
 					BorderSizePixel = 0,
 					Position = UDim2.new(1, -14, 0.5, 0),
-					Size = UDim2.new(0, 18, 0, 18)
+					Size = UDim2.new(0, 30, 0, 24)
 				}, Button)
+
+        Custom:Create("UICorner", {
+          CornerRadius = UDim.new(0, 6)
+        }, FeatureFrame1)
+
+        Custom:Create("UIStroke", {
+          Color = Custom.ColorRGB,
+          Thickness = 1,
+          Transparency = 0.35
+        }, FeatureFrame1)
 
         Custom:Create("ImageLabel", {
           Name = "FeatureImg",
@@ -2005,11 +2057,17 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
           Position = UDim2.new(0.5, 0, 0.5, 0),
-          Size = UDim2.new(1, 0, 1, 0)
+          Size = UDim2.new(0, 15, 0, 15)
         }, FeatureFrame1)
 
         ButtonButton.Activated:Connect(function()
 					CircleClick(ButtonButton, Player:GetMouse().X, Player:GetMouse().Y)
+          TweenService:Create(Button, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.82}):Play()
+          task.delay(0.12, function()
+            if Button and Button.Parent then
+              TweenService:Create(Button, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.9}):Play()
+            end
+          end)
 
 					Callback()
 				end)
