@@ -183,6 +183,7 @@ local Icons = {
   next = "rbxassetid://12662718374",
   rod = "rbxassetid://103247953194129",
   fish = "rbxassetid://97167558235554",
+  mouse_pointer_click = "rbxassetid://7734010488",
 }
 
 local DefaultTabIcons = {
@@ -508,6 +509,19 @@ function WisHub_Library:CreateWindow(Config)
 
   Custom:Create("UICorner", {}, Top)
 
+  local LogoFallback = Custom:Create("TextLabel", {
+    Font = Custom.Font,
+    Text = "W",
+    TextColor3 = Custom.ColorRGB,
+    TextSize = 17,
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    AnchorPoint = Vector2.new(0, 0.5),
+    Position = UDim2.new(0, 14, 0.5, 0),
+    Size = UDim2.new(0, 18, 0, 18),
+    Name = "LogoFallback"
+  }, Top)
+
   local LogoImage = Custom:Create("ImageLabel", {
     Image = HubLogo,
     ImageColor3 = Color3.fromRGB(255, 255, 255),
@@ -519,6 +533,23 @@ function WisHub_Library:CreateWindow(Config)
     Size = UDim2.new(0, 18, 0, 18),
     Name = "LogoImage"
   }, Top)
+
+  local function UpdateLogoFallback()
+    local Loaded = false
+    pcall(function()
+      Loaded = LogoImage.IsLoaded
+    end)
+
+    LogoFallback.Visible = not Loaded
+    LogoImage.Visible = Loaded
+  end
+
+  pcall(function()
+    LogoImage:GetPropertyChangedSignal("IsLoaded"):Connect(UpdateLogoFallback)
+  end)
+
+  task.defer(UpdateLogoFallback)
+  task.delay(1, UpdateLogoFallback)
 
   local TextLabel1 = Custom:Create("TextLabel", {
     Font = Custom.Font,
@@ -1334,14 +1365,37 @@ function WisHub_Library:CreateWindow(Config)
     end
   end
 
+  local TabVisualTween = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+  local PageSwitchTween = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
   local function ApplyTabVisual(TabState, IsActive)
-    TabState.Tab.BackgroundColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(255, 255, 255)
-    TabState.Tab.BackgroundTransparency = IsActive and 0.82 or 0.999
-    TabState.ChooseFrame.Visible = IsActive
-    TabState.ChooseFrame.Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
-    TabState.NameLabel.TextColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 205, 214)
-    TabState.IconLabel.ImageColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 160)
-    TabState.IconLabel.ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
+    TabState.ChooseFrame.Visible = true
+
+    TweenService:Create(TabState.Tab, TabVisualTween, {
+      BackgroundColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(255, 255, 255),
+      BackgroundTransparency = IsActive and 0.82 or 0.999
+    }):Play()
+
+    TweenService:Create(TabState.ChooseFrame, TabVisualTween, {
+      Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    TweenService:Create(TabState.NameLabel, TabVisualTween, {
+      TextColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 205, 214)
+    }):Play()
+
+    TweenService:Create(TabState.IconLabel, TabVisualTween, {
+      ImageColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 160),
+      ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
+    }):Play()
+
+    if not IsActive then
+      task.delay(0.14, function()
+        if CurrentTab ~= TabState.Name then
+          TabState.ChooseFrame.Visible = false
+        end
+      end)
+    end
   end
 
   local function SwitchTab(TabName)
@@ -1352,6 +1406,8 @@ function WisHub_Library:CreateWindow(Config)
     Tabs.CurrentTab = CurrentTab
     WisHub_Library.LastSelectedTab = CurrentTab
     NameTab.Text = CurrentTab
+    NameTab.TextTransparency = 0.28
+    LayersReal.Position = UDim2.new(0, 4, 1, 0)
     CloseFloatingState()
 
     for _, State in ipairs(TabOrder) do
@@ -1371,6 +1427,9 @@ function WisHub_Library:CreateWindow(Config)
         LayersPageLayout:JumpToIndex(TabState.Index)
       end)
     end
+
+    TweenService:Create(NameTab, PageSwitchTween, {TextTransparency = 0}):Play()
+    TweenService:Create(LayersReal, PageSwitchTween, {Position = UDim2.new(0, 0, 1, 0)}):Play()
 
     return true
   end
@@ -1923,7 +1982,7 @@ function WisHub_Library:CreateWindow(Config)
       function Item:AddButton(Config)
         local Title = Config[1] or Config.Title or ""
         local Content = Config[2] or Config.Content or ""
-        local Icon = Config[3] or Config.Icon or "rbxassetid://7734010488"
+        local Icon = Config[3] or Config.Icon or Icons.mouse_pointer_click
         local Callback = Config[4] or Config.Callback or function() end
         local Funcs_Button = {}
 
