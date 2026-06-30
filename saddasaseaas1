@@ -147,8 +147,57 @@ function CircleClick(Button, X, Y)
 	end)
 end
 
+local Icons = {
+  player = "rbxassetid://12120698352",
+  web = "rbxassetid://137601480983962",
+  bag = "rbxassetid://8601111810",
+  shop = "rbxassetid://4985385964",
+  cart = "rbxassetid://128874923961846",
+  plug = "rbxassetid://137601480983962",
+  settings = "rbxassetid://70386228443175",
+  loop = "rbxassetid://122032243989747",
+  gps = "rbxassetid://17824309485",
+  compas = "rbxassetid://125300760963399",
+  gamepad = "rbxassetid://84173963561612",
+  boss = "rbxassetid://13132186360",
+  scroll = "rbxassetid://114127804740858",
+  menu = "rbxassetid://6340513838",
+  crosshair = "rbxassetid://12614416478",
+  user = "rbxassetid://108483430622128",
+  stat = "rbxassetid://12094445329",
+  eyes = "rbxassetid://14321059114",
+  sword = "rbxassetid://82472368671405",
+  discord = "rbxassetid://94434236999817",
+  star = "rbxassetid://107005941750079",
+  skeleton = "rbxassetid://17313330026",
+  payment = "rbxassetid://18747025078",
+  scan = "rbxassetid://109869955247116",
+  alert = "rbxassetid://73186275216515",
+  question = "rbxassetid://17510196486",
+  idea = "rbxassetid://16833255748",
+  strom = "rbxassetid://13321880293",
+  water = "rbxassetid://100076212630732",
+  dcs = "rbxassetid://15310731934",
+  start = "rbxassetid://108886429866687",
+  next = "rbxassetid://12662718374",
+  rod = "rbxassetid://103247953194129",
+  fish = "rbxassetid://97167558235554",
+}
+
+local DefaultTabIcons = {
+  info = "idea",
+  farm = "loop",
+  shop = "shop",
+  pet = "player",
+  misc = "menu",
+  visual = "eyes",
+  config = "settings",
+}
+
 local WisHub_Library, Notification = {}, {}
 
+WisHub_Library.Icons = Icons
+WisHub_Library.DefaultTabIcons = DefaultTabIcons
 WisHub_Library.Unloaded = false
 
 function WisHub_Library:SetNotification(Config)
@@ -465,7 +514,6 @@ function WisHub_Library:CreateWindow(Config)
     Thickness = 0.4
   }, TextLabel1)
 
-  -- /// Discord Badge (pill / kapsul)
   local DiscordPill = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0, 0.5),
     BackgroundColor3 = Color3.fromRGB(33, 30, 46),
@@ -651,7 +699,7 @@ function WisHub_Library:CreateWindow(Config)
   local LayersPageLayout = Custom:Create("UIPageLayout", {
     SortOrder = Enum.SortOrder.LayoutOrder,
     Name = "LayersPageLayout",
-    TweenTime = 0.5,
+    TweenTime = 0,
     EasingDirection = Enum.EasingDirection.InOut,
     EasingStyle = Enum.EasingStyle.Quad
   }, LayersFolder)
@@ -675,7 +723,6 @@ function WisHub_Library:CreateWindow(Config)
     SortOrder = Enum.SortOrder.LayoutOrder
   }, ScrollTab)
 
-  -- /// Tab Search (di atas list tab)
   local SearchTab = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0),
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -765,7 +812,6 @@ function WisHub_Library:CreateWindow(Config)
 		if Open_Close.Visible then Open_Close.Visible = false end
 	end)
 
-  -- /// Close Confirmation
   local ConfirmHolder = Custom:Create("Frame", {
     Active = true,
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -886,8 +932,6 @@ function WisHub_Library:CreateWindow(Config)
 	MakeDraggable(Top, DropShadowHolder)
 
 
-  -- /// Blur
-
   local MoreBlur = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(1, 1),
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -1006,19 +1050,120 @@ function WisHub_Library:CreateWindow(Config)
     Parent = DropdownFolder
   })
 
-  -- /// Create Tab
-
   local Tabs = {}
   local CountTab = 0
   local CountDropdown = 0
+  local CurrentTab = nil
+  local TabStates = {}
+  local TabKeys = {}
+  local TabOrder = {}
+
+  local function NormalizeTabName(TabName)
+    local Text = tostring(TabName or "")
+    Text = Text:gsub("%[", ""):gsub("%]", "")
+    Text = Text:gsub("^%s+", ""):gsub("%s+$", "")
+    return string.lower(Text)
+  end
+
+  local PreferredTab = Config.DefaultTab or Config.DefaultTabName or WisHub_Library.LastSelectedTab or "Info"
+  local PreferredTabKey = NormalizeTabName(PreferredTab)
+
+  local function ResolveTabState(TabName)
+    return TabStates[TabName] or TabKeys[NormalizeTabName(TabName)]
+  end
+
+  local function ResolveTabIcon(TabName, ExplicitIcon)
+    if ExplicitIcon and ExplicitIcon ~= "" then
+      return ExplicitIcon
+    end
+
+    local IconKey = DefaultTabIcons[NormalizeTabName(TabName)]
+    return IconKey and Icons[IconKey] or ""
+  end
+
+  local function CloseFloatingState()
+    if MoreBlur.Visible then
+      MoreBlur.Visible = false
+      MoreBlur.BackgroundTransparency = 1
+      DropdownSelect.Position = UDim2.new(1, 172, 0.5, 0)
+    end
+
+    for _, DropdownPage in pairs(DropdownFolder:GetChildren()) do
+      if DropdownPage:IsA("ScrollingFrame") then
+        local DropSearch = DropdownPage:FindFirstChild("SearchBar")
+        if DropSearch and DropSearch:IsA("TextBox") and DropSearch.Text ~= "" then
+          DropSearch.Text = ""
+        end
+      end
+    end
+  end
+
+  local function ApplyTabVisual(TabState, IsActive)
+    TabState.Tab.BackgroundTransparency = IsActive and 0.92 or 0.999
+    TabState.ChooseFrame.Visible = IsActive
+    TabState.ChooseFrame.Size = IsActive and UDim2.new(0, 1, 0, 12) or UDim2.new(0, 0, 0, 0)
+    TabState.NameLabel.TextColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(215, 215, 222)
+    TabState.IconLabel.ImageColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(170, 170, 178)
+    TabState.IconLabel.ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.25)
+  end
+
+  local function SwitchTab(TabName)
+    local TabState = ResolveTabState(TabName)
+    if not TabState then return false end
+
+    CurrentTab = TabState.Name
+    Tabs.CurrentTab = CurrentTab
+    WisHub_Library.LastSelectedTab = CurrentTab
+    NameTab.Text = CurrentTab
+    CloseFloatingState()
+
+    for _, State in ipairs(TabOrder) do
+      local IsActive = State == TabState
+      State.Content.Visible = IsActive
+      State.Content.Active = IsActive
+      State.Content.ScrollingEnabled = IsActive
+      ApplyTabVisual(State, IsActive)
+    end
+
+    local Jumped = pcall(function()
+      LayersPageLayout:JumpTo(TabState.Content)
+    end)
+
+    if not Jumped then
+      pcall(function()
+        LayersPageLayout:JumpToIndex(TabState.Index)
+      end)
+    end
+
+    return true
+  end
+
+  function Tabs:SwitchTab(TabName)
+    return SwitchTab(TabName)
+  end
+
+  function Tabs:GetCurrentTab()
+    return CurrentTab
+  end
+
   function Tabs:CreateTab(Config)
+    Config = Config or {}
     local _Name = Config[1] or Config.Name or "" 
-    local Icon = Config[2] or Config.Icon or ""
+    local Icon = ResolveTabIcon(_Name, Config[2] or Config.Icon)
+    local TabKey = NormalizeTabName(_Name)
+
+    if TabKeys[TabKey] then
+      return TabKeys[TabKey].Sections
+    end
+    
+    local Sections, CountSection = {}, 0
     
     local ScrolLayers = Custom:Create("ScrollingFrame", {
 			ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80),
 			ScrollBarThickness = 0,
 			Active = true,
+      ScrollingEnabled = false,
+      Visible = false,
 			LayoutOrder = CountTab,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BackgroundTransparency = 0.999,
@@ -1037,7 +1182,7 @@ function WisHub_Library:CreateWindow(Config)
 
     local Tab = Custom:Create("Frame", {
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-			BackgroundTransparency = CountTab == 0 and 0.92 or 0.999,
+			BackgroundTransparency = 0.999,
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
 			LayoutOrder = CountTab,
@@ -1065,7 +1210,7 @@ function WisHub_Library:CreateWindow(Config)
       Name = "TabButton",
     }, Tab)
 
-    Custom:Create("TextLabel", {
+    local TabName = Custom:Create("TextLabel", {
       Font = Custom.Font,
       Text = _Name,
       TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -1080,8 +1225,10 @@ function WisHub_Library:CreateWindow(Config)
       Name = "TabName",
     }, Tab)
 
-    Custom:Create("ImageLabel", {
+    local TabIcon = Custom:Create("ImageLabel", {
       Image = Icon,
+      ImageColor3 = Color3.fromRGB(170, 170, 178),
+      ImageTransparency = Icon == "" and 1 or 0.25,
       BackgroundColor3 = Color3.fromRGB(255, 255, 255),
       BackgroundTransparency = 0.999,
       BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -1091,70 +1238,47 @@ function WisHub_Library:CreateWindow(Config)
       Name = "FeatureImg",
     }, Tab)
 
-    if CountTab == 0 then
-      LayersPageLayout:JumpToIndex(0)
-      NameTab.Text = _Name
-  
-      local ChooseFrame = Custom:Create("Frame", {
-        BackgroundColor3 = Custom.ColorRGB,
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        BorderSizePixel = 0,
-        Position = UDim2.new(0, 2, 0, 9),
-        Size = UDim2.new(0, 1, 0, 12),
-        Name = "ChooseFrame",
-      }, Tab)
-  
-      Custom:Create("UIStroke", {
-        Color = Custom.ColorRGB,
-        Thickness = 1.6,
-      }, ChooseFrame)
-  
-      Custom:Create("UICorner", {}, ChooseFrame)
-    end
+    local ChooseFrame = Custom:Create("Frame", {
+      BackgroundColor3 = Custom.ColorRGB,
+      BorderColor3 = Color3.fromRGB(0, 0, 0),
+      BorderSizePixel = 0,
+      Position = UDim2.new(0, 2, 0, 9),
+      Size = UDim2.new(0, 0, 0, 0),
+      Visible = false,
+      Name = "ChooseFrame",
+    }, Tab)
+
+    Custom:Create("UIStroke", {
+      Color = Custom.ColorRGB,
+      Thickness = 1.6,
+    }, ChooseFrame)
+
+    Custom:Create("UICorner", {}, ChooseFrame)
+
+    local TabState = {
+      Name = _Name,
+      Icon = Icon,
+      Index = CountTab,
+      Tab = Tab,
+      Content = ScrolLayers,
+      ChooseFrame = ChooseFrame,
+      NameLabel = TabName,
+      IconLabel = TabIcon,
+      Sections = Sections
+    }
+
+    TabStates[_Name] = TabState
+    TabKeys[TabKey] = TabState
+    table.insert(TabOrder, TabState)
 
     TabButton.Activated:Connect(function()
       CircleClick(TabButton, Player:GetMouse().X, Player:GetMouse().Y)
-      local FrameChoose = nil
-
-      for _, s in pairs(ScrollTab:GetChildren()) do
-        for _, v in pairs(s:GetChildren()) do
-          if v.Name == "ChooseFrame" then
-            FrameChoose = v
-            break
-          end
-        end
-
-        if FrameChoose then break end
-      end
-  
-      if FrameChoose and Tab.LayoutOrder ~= LayersPageLayout.CurrentPage.LayoutOrder then
-        for _, TabFrame in pairs(ScrollTab:GetChildren()) do
-          if TabFrame.Name == "Tab" then
-            TweenService:Create(TabFrame, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.999}):Play()
-          end
-        end
-  
-        local _TabT = TweenService:Create(Tab, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.92})
-        local _FTween = TweenService:Create(FrameChoose, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { Position = UDim2.new(0, 2, 0, 9 + (33 * Tab.LayoutOrder)) })
-
-        _TabT:Play()
-        _FTween:Play()
-  
-        LayersPageLayout:JumpToIndex(Tab.LayoutOrder)
-  
-        task.wait(0.05)
-        NameTab.Text = _Name
-  
-        TweenService:Create(FrameChoose, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 1, 0, 20)}):Play()
-  
-        task.wait(0.2)
-        TweenService:Create(FrameChoose, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 1, 0, 12)}):Play()
-      end
+      SwitchTab(_Name)
     end)
 
-    --- /// Section
-   
-    local Sections, CountSection = {}, 0
+    if not CurrentTab or TabKey == PreferredTabKey then
+      SwitchTab(_Name)
+    end
 
     function Sections:AddSection(Title, OpenSection)
       local Title = Title or ""
