@@ -421,6 +421,7 @@ function WisHub_Library:CreateWindow(Config)
   local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(600, 350)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
   local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
+  local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://121207919642656"
 
   local Funcs = {}
 
@@ -429,12 +430,13 @@ function WisHub_Library:CreateWindow(Config)
   }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
 
   local DropShadowHolder = Custom:Create("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
-    Size = UDim2.new(0, 455, 0, 350),
+    Size = SizeUi,
     ZIndex = 0,
     Name = "DropShadowHolder",
-    Position = UDim2.new(0, (WisHubGui.AbsoluteSize.X // 2 - 455 // 2), 0, (WisHubGui.AbsoluteSize.Y // 2 - 350 // 2))
+    Position = UDim2.new(0.5, 0, 0.5, 0)
   }, WisHubGui)
 
   local DropShadow = Custom:Create("ImageLabel", {
@@ -481,7 +483,7 @@ function WisHub_Library:CreateWindow(Config)
 
   local TextLabel = Custom:Create("TextLabel", {
     Font = Custom.Font,
-    Text = Title,
+    Text = "",
     TextColor3 = Custom.ColorRGB,
     TextSize = 14,
     TextXAlignment = Enum.TextXAlignment.Left,
@@ -489,15 +491,28 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundTransparency = 0.9990000128746033,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
-    Size = UDim2.new(1, -100, 1, 0),
-    Position = UDim2.new(0, 10, 0, 0)
+    Size = UDim2.new(0, 0, 1, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    Visible = false
   }, Top)
 
   Custom:Create("UICorner", {}, Top)
 
+  local LogoImage = Custom:Create("ImageLabel", {
+    Image = HubLogo,
+    ImageColor3 = Color3.fromRGB(255, 255, 255),
+    ScaleType = Enum.ScaleType.Fit,
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    AnchorPoint = Vector2.new(0, 0.5),
+    Position = UDim2.new(0, 14, 0.5, 0),
+    Size = UDim2.new(0, 18, 0, 18),
+    Name = "LogoImage"
+  }, Top)
+
   local TextLabel1 = Custom:Create("TextLabel", {
     Font = Custom.Font,
-    Text = Description,
+    Text = "",
     TextColor3 = Color3.fromRGB(235, 235, 240),
     TextSize = 13,
     TextXAlignment = Enum.TextXAlignment.Left,
@@ -505,8 +520,9 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundTransparency = 0.9990000128746033,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
-    Size = UDim2.new(1, -(TextLabel.TextBounds.X + 104), 1, 0),
-    Position = UDim2.new(0, TextLabel.TextBounds.X + 15, 0, 0)
+    Size = UDim2.new(0, 0, 1, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    Visible = false
   }, Top)
 
   Custom:Create("UIStroke", {
@@ -519,7 +535,7 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundColor3 = Color3.fromRGB(33, 30, 46),
     BackgroundTransparency = 0.18,
     BorderSizePixel = 0,
-    Position = UDim2.new(0, TextLabel.TextBounds.X + TextLabel1.TextBounds.X + 25, 0.5, 0),
+    Position = UDim2.new(0, 42, 0.5, 0),
     Size = UDim2.new(0, 150, 0, 22),
     Name = "DiscordPill"
   }, Top)
@@ -1133,7 +1149,7 @@ function WisHub_Library:CreateWindow(Config)
     if not WisHub_Library.Unloaded then WisHub_Library.Unloaded = true end
   end)
 
-  DropShadowHolder.Size = UDim2.new(0, 115 + TextLabel.TextBounds.X + 1 + TextLabel1.TextBounds.X, 0, 350)
+  DropShadowHolder.Size = SizeUi
 	MakeDraggable(Top, DropShadowHolder)
 
 
@@ -1764,7 +1780,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 8),
+          Position = UDim2.new(0, 10, 0, 7),
           Size = UDim2.new(1, -16, 0, 13),
           Name = "ParagraphTitle",
         }, Paragraph)
@@ -1776,10 +1792,10 @@ function WisHub_Library:CreateWindow(Config)
           TextSize = 12,
           TextTransparency = 0.6,
           TextXAlignment = Enum.TextXAlignment.Left,
-          TextYAlignment = Enum.TextYAlignment.Bottom,
+          TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 22),
+          Position = UDim2.new(0, 10, 0, 19),
           Name = "ParagraphContent",
         }, Paragraph)
 
@@ -1788,7 +1804,7 @@ function WisHub_Library:CreateWindow(Config)
           local lineCount = math.ceil(ParagraphContent.TextBounds.X / ParagraphContent.AbsoluteSize.X)
 
           ParagraphContent.Size = UDim2.new(1, -16, 0, 12 + (12 * lineCount))
-          Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 30)
+          Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 27)
           ParagraphContent.TextWrapped = true
 
           UpdateSizeSection()
@@ -1921,7 +1937,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 8),
+					Position = UDim2.new(0, 10, 0, 7),
 					Size = UDim2.new(1, -70, 0, 13)
 				}, Button)
 
@@ -1933,11 +1949,11 @@ function WisHub_Library:CreateWindow(Config)
 					TextSize = 12,
 					TextTransparency = 0.6,
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Bottom,
+					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 22),
+					Position = UDim2.new(0, 10, 0, 19),
 					Size = UDim2.new(1, -70, 0, 12)
 				}, Button)
 
@@ -1945,7 +1961,7 @@ function WisHub_Library:CreateWindow(Config)
           local _Height = 12 + (12 * (ButtonContent.TextBounds.X // ButtonContent.AbsoluteSize.X))
           ButtonContent.Size = UDim2.new(1, -70, 0, _Height)
           
-          Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 30)
+          Button.Size = UDim2.new(1, 0, 0, ButtonContent.AbsoluteSize.Y + 27)
         end
       
         ButtonContent.TextWrapped = true
@@ -2044,7 +2060,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 8),
+					Position = UDim2.new(0, 10, 0, 7),
 					Size = UDim2.new(1, -100, 0, 13)
 				}, Toggle)
 
@@ -2056,11 +2072,11 @@ function WisHub_Library:CreateWindow(Config)
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					TextTransparency = 0.6,
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Bottom,
+					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 22),
+					Position = UDim2.new(0, 10, 0, 19),
 					Size = UDim2.new(1, -100, 0, 12)
 				}, Toggle)
 				
@@ -2069,7 +2085,7 @@ function WisHub_Library:CreateWindow(Config)
           local Ratio = ToggleContent.TextBounds.X / ToggleContent.AbsoluteSize.X
 
           ToggleContent.Size = UDim2.new(1, -100, 0, 12 + (12 * math.ceil(Ratio)))
-          Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 30)
+          Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 27)
           ToggleContent.TextWrapped = true
         end
       
@@ -2203,7 +2219,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.9990000128746033,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 8),
+					Position = UDim2.new(0, 10, 0, 7),
 					Size = UDim2.new(1, -180, 0, 13),
 					Name = "SliderTitle",
 				}, Slider)
@@ -2215,12 +2231,12 @@ function WisHub_Library:CreateWindow(Config)
 					TextSize = 12,
 					TextTransparency = 0.6000000238418579,
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Bottom,
+					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.9990000128746033,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 22),
+					Position = UDim2.new(0, 10, 0, 19),
 					Size = UDim2.new(1, -180, 0, 12),
 					Name = "SliderContent",
 				}, Slider)
@@ -2228,7 +2244,7 @@ function WisHub_Library:CreateWindow(Config)
         local function UpdateSliderSize()
           SliderContent.TextWrapped = false
           SliderContent.Size = UDim2.new(1, -180, 0, 12 + (12 * math.floor(SliderContent.TextBounds.X / SliderContent.AbsoluteSize.X)))
-          Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 30)
+          Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 27)
           SliderContent.TextWrapped = true
         end
 
@@ -2240,16 +2256,23 @@ function WisHub_Library:CreateWindow(Config)
 
         local SliderInput = Custom:Create("Frame", {
 					AnchorPoint = Vector2.new(0, 0.5),
-					BackgroundColor3 = Custom.ColorRGB,
+					BackgroundColor3 = Color3.fromRGB(28, 24, 36),
+          BackgroundTransparency = 0.18,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
 					Position = UDim2.new(1, -155, 0.5, 0),
-					Size = UDim2.new(0, 28, 0, 20),
+					Size = UDim2.new(0, 30, 0, 18),
 					Name = "SliderInput",
 				}, Slider)
 
         Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 2),
+          CornerRadius = UDim.new(0, 4),
+        }, SliderInput)
+
+        Custom:Create("UIStroke", {
+          Color = Custom.ColorRGB,
+          Thickness = 1,
+          Transparency = 0.35
         }, SliderInput)
 
          
@@ -2257,8 +2280,8 @@ function WisHub_Library:CreateWindow(Config)
 					Font = Custom.Font,
 					Text = "90",
 					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 13,
-					TextWrapped = true,
+					TextSize = 12,
+					TextWrapped = false,
 					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
 					BackgroundTransparency = 0.9990000128746033,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -2427,7 +2450,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 8),
+          Position = UDim2.new(0, 10, 0, 7),
           Size = UDim2.new(1, -180, 0, 13),
           Name = "InputTitle",
         }, Input)
@@ -2440,12 +2463,12 @@ function WisHub_Library:CreateWindow(Config)
           TextTransparency = 0.6,
           TextWrapped = true,
           TextXAlignment = Enum.TextXAlignment.Left,
-          TextYAlignment = Enum.TextYAlignment.Bottom,
+          TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 22),
+          Position = UDim2.new(0, 10, 0, 19),
           Size = UDim2.new(1, -180, 0, 12),
           Name = "InputContent",
           Parent = Input
@@ -2456,7 +2479,7 @@ function WisHub_Library:CreateWindow(Config)
           local Calculated = 12 + (12 * math.floor(Ratio))
 
           InputContent.Size = UDim2.new(1, -180, 0, Calculated)
-          Input.Size = UDim2.new(1, 0, 0, InputContent.AbsoluteSize.Y + 30)
+          Input.Size = UDim2.new(1, 0, 0, InputContent.AbsoluteSize.Y + 27)
         end
       
         UpdateInputSize()
@@ -2470,13 +2493,13 @@ function WisHub_Library:CreateWindow(Config)
 
         local InputFrame = Custom:Create("Frame", {
           AnchorPoint = Vector2.new(1, 0.5),
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.95,
+          BackgroundColor3 = Color3.fromRGB(18, 15, 25),
+          BackgroundTransparency = 0.42,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           ClipsDescendants = true,
           Position = UDim2.new(1, -7, 0.5, 0),
-          Size = UDim2.new(0, 148, 0, 30),
+          Size = UDim2.new(0, 144, 0, 26),
           Name = "InputFrame"
         }, Input)
     
@@ -2485,11 +2508,17 @@ function WisHub_Library:CreateWindow(Config)
           CornerRadius = UDim.new(0, 4)
         }, InputFrame)
 
+        Custom:Create("UIStroke", {
+          Color = Custom.ColorRGB,
+          Thickness = 1,
+          Transparency = 0.76
+        }, InputFrame)
+
         local InputTextBox = Custom:Create("TextBox", {
           CursorPosition = -1,
           Font = Custom.Font,
           PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
-          PlaceholderText = "Write your input there",
+          PlaceholderText = "Input value",
           Text = "",
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
@@ -2578,7 +2607,7 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 8),
+          Position = UDim2.new(0, 10, 0, 7),
           Size = UDim2.new(1, -180, 0, 13),
           Name = "DropdownTitle",
           Parent = Dropdown
@@ -2592,12 +2621,12 @@ function WisHub_Library:CreateWindow(Config)
           TextTransparency = 0.6,
           TextWrapped = true,
           TextXAlignment = Enum.TextXAlignment.Left,
-          TextYAlignment = Enum.TextYAlignment.Bottom,
+          TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 22),
+          Position = UDim2.new(0, 10, 0, 19),
           Size = UDim2.new(1, -180, 0, 12),
           Name = "DropdownContent",
           Parent = Dropdown
@@ -2605,13 +2634,13 @@ function WisHub_Library:CreateWindow(Config)
         
 				DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
 				DropdownContent.TextWrapped = true
-				Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
+				Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 27)
         
         DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
           DropdownContent.TextWrapped = false
             
 					DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
-					Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
+					Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 27)
             
           DropdownContent.TextWrapped = true
 
