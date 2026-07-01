@@ -433,6 +433,8 @@ function WisHub_Library:CreateWindow(Config)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
   local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
   local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105006444774299"
+  local HubLogoSize = Config.LogoSize or 24
+  local HubLogoColor = Config.LogoColor or Color3.fromRGB(255, 255, 255)
 
   local Funcs = {}
 
@@ -521,13 +523,14 @@ function WisHub_Library:CreateWindow(Config)
 
   local LogoImage = Custom:Create("ImageLabel", {
     Image = HubLogo,
-    ImageColor3 = Color3.fromRGB(255, 255, 255),
+    ImageColor3 = HubLogoColor,
+    ImageTransparency = 0,
     ScaleType = Enum.ScaleType.Fit,
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     AnchorPoint = Vector2.new(0, 0.5),
-    Position = UDim2.new(0, 14, 0.5, 0),
-    Size = UDim2.new(0, 18, 0, 18),
+    Position = UDim2.new(0, 11, 0.5, 0),
+    Size = UDim2.new(0, HubLogoSize, 0, HubLogoSize),
     Name = "LogoImage"
   }, Top)
 
@@ -1304,6 +1307,7 @@ function WisHub_Library:CreateWindow(Config)
   local TabStates = {}
   local TabKeys = {}
   local TabOrder = {}
+  local ActiveCompactDropdownClose = nil
 
   local function NormalizeTabName(TabName)
     local Text = tostring(TabName or "")
@@ -1329,6 +1333,10 @@ function WisHub_Library:CreateWindow(Config)
   end
 
   local function CloseFloatingState()
+    if ActiveCompactDropdownClose then
+      ActiveCompactDropdownClose()
+    end
+
     if MoreBlur.Visible then
       MoreBlur.Visible = false
       MoreBlur.BackgroundTransparency = 1
@@ -1347,15 +1355,12 @@ function WisHub_Library:CreateWindow(Config)
 
   local function ApplyTabVisual(TabState, IsActive)
     local Tween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    TabState.ChooseFrame.Visible = true
+    TabState.ChooseFrame.Visible = IsActive
+    TabState.ChooseFrame.Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
 
     TweenService:Create(TabState.Tab, Tween, {
       BackgroundColor3 = IsActive and Color3.fromRGB(48, 24, 70) or Color3.fromRGB(255, 255, 255),
       BackgroundTransparency = IsActive and 0.12 or 0.999
-    }):Play()
-
-    TweenService:Create(TabState.ChooseFrame, Tween, {
-      Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
     }):Play()
 
     TweenService:Create(TabState.NameLabel, Tween, {
@@ -1366,14 +1371,6 @@ function WisHub_Library:CreateWindow(Config)
       ImageColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(150, 150, 160),
       ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
     }):Play()
-
-    if not IsActive then
-      task.delay(0.13, function()
-        if TabState and TabState.ChooseFrame and TabState.ChooseFrame.Size.X.Offset == 0 then
-          TabState.ChooseFrame.Visible = false
-        end
-      end)
-    end
   end
 
   local function SwitchTab(TabName)
@@ -1592,7 +1589,7 @@ function WisHub_Library:CreateWindow(Config)
     function Sections:AddSection(Title, OpenSection)
       local Title = Title or ""
       local OpenSection = OpenSection or false
-      local ItemGap = 4
+      local ItemGap = 5
   
       local Section = Custom:Create("Frame", {
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -1969,8 +1966,8 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.16,
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
-          Position = UDim2.new(0, 1, 0, 0),
-          Size = UDim2.new(1, -2, 0, 32)
+          Position = UDim2.new(0, 3, 0, 0),
+          Size = UDim2.new(1, -6, 0, 32)
         }, SectionAdd)
 
         Custom:Create("UICorner", {
@@ -2975,8 +2972,6 @@ function WisHub_Library:CreateWindow(Config)
         return Funcs_Dropdown
       end
 
-      local ActiveCompactDropdownClose
-
       -- Compact dropdown override; keeps the legacy API while avoiding the old side overlay.
       function Item:AddDropdown(Config)
         local Title = Config[1] or Config.Title or ""
@@ -3134,20 +3129,39 @@ function WisHub_Library:CreateWindow(Config)
           Name = "OptionImg"
         }, SelectOptionsFrame)
 
-        local function ApplyDropdownSize()
-          local NewHeight = BaseHeight
-          if IsOpen then
-            NewHeight = NewHeight + PopupHeight + 8
+        local function UpdatePopupPosition()
+          if not Popup then return end
+
+          local PopupWidth = 148
+          local RootPosition = LayersReal.AbsolutePosition
+          local RootSize = LayersReal.AbsoluteSize
+          local FieldPosition = SelectOptionsFrame.AbsolutePosition
+          local FieldSize = SelectOptionsFrame.AbsoluteSize
+          local X = FieldPosition.X - RootPosition.X + FieldSize.X - PopupWidth
+          local YBelow = FieldPosition.Y - RootPosition.Y + FieldSize.Y + 6
+          local YAbove = FieldPosition.Y - RootPosition.Y - PopupHeight - 6
+          local MaxX = math.max(0, RootSize.X - PopupWidth)
+          local MaxY = math.max(0, RootSize.Y - PopupHeight)
+
+          X = math.clamp(X, 0, MaxX)
+
+          local Y = YBelow
+          if Y > MaxY and YAbove >= 0 then
+            Y = YAbove
+          else
+            Y = math.clamp(Y, 0, MaxY)
           end
 
-          Dropdown.Size = UDim2.new(1, 0, 0, NewHeight)
+          Popup.Position = UDim2.new(0, X, 0, Y)
+          Popup.Size = UDim2.new(0, PopupWidth, 0, PopupHeight)
+        end
+
+        local function ApplyDropdownSize()
+          Dropdown.Size = UDim2.new(1, 0, 0, BaseHeight)
           DropdownButton.Size = UDim2.new(1, 0, 0, BaseHeight)
           SelectOptionsFrame.Position = UDim2.new(1, -7, 0, BaseHeight / 2)
 
-          if Popup then
-            Popup.Position = UDim2.new(1, -7, 0, BaseHeight + 4)
-            Popup.Size = UDim2.new(0, 148, 0, PopupHeight)
-          end
+          UpdatePopupPosition()
 
           UpdateSizeSection()
         end
@@ -3382,17 +3396,17 @@ function WisHub_Library:CreateWindow(Config)
           ActiveCompactDropdownClose = CloseDropdown
 
           Popup = Custom:Create("Frame", {
-            AnchorPoint = Vector2.new(1, 0),
+            AnchorPoint = Vector2.new(0, 0),
             BackgroundColor3 = Custom.Surface2,
             BackgroundTransparency = 0.04,
             BorderColor3 = Color3.fromRGB(0, 0, 0),
             BorderSizePixel = 0,
             ClipsDescendants = true,
-            Position = UDim2.new(1, -7, 0, BaseHeight + 4),
+            Position = UDim2.new(0, 0, 0, 0),
             Size = UDim2.new(0, 148, 0, 0),
             ZIndex = 80,
             Name = "DropdownPopup"
-          }, Dropdown)
+          }, LayersReal)
 
           Custom:Create("UICorner", {
             CornerRadius = UDim.new(0, 4)
