@@ -420,10 +420,10 @@ function WisHub_Library:CreateWindow(Config)
   local Title = Config[1] or Config.Title or ""
   local Description = Config[2] or Config.Description or ""
   local TabWidth = Config[3] or Config["Tab Width"] or 120
-  local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(600, 350)
+  local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(560, 330)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
   local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
-  local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105474892475454"
+  local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105006444774299"
 
   local Funcs = {}
 
@@ -444,7 +444,7 @@ function WisHub_Library:CreateWindow(Config)
   local DropShadow = Custom:Create("ImageLabel", {
     Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(15, 15, 15),
-    ImageTransparency = 0.7,
+    ImageTransparency = 0.62,
     ScaleType = Enum.ScaleType.Slice,
     SliceCenter = Rect.new(49, 49, 450, 450),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -459,7 +459,7 @@ function WisHub_Library:CreateWindow(Config)
   local Main = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    BackgroundTransparency = 0.22,
+    BackgroundTransparency = 0.16,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -509,19 +509,6 @@ function WisHub_Library:CreateWindow(Config)
 
   Custom:Create("UICorner", {}, Top)
 
-  local LogoFallback = Custom:Create("TextLabel", {
-    Font = Custom.Font,
-    Text = "W",
-    TextColor3 = Custom.ColorRGB,
-    TextSize = 17,
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    AnchorPoint = Vector2.new(0, 0.5),
-    Position = UDim2.new(0, 14, 0.5, 0),
-    Size = UDim2.new(0, 18, 0, 18),
-    Name = "LogoFallback"
-  }, Top)
-
   local LogoImage = Custom:Create("ImageLabel", {
     Image = HubLogo,
     ImageColor3 = Color3.fromRGB(255, 255, 255),
@@ -533,23 +520,6 @@ function WisHub_Library:CreateWindow(Config)
     Size = UDim2.new(0, 18, 0, 18),
     Name = "LogoImage"
   }, Top)
-
-  local function UpdateLogoFallback()
-    local Loaded = false
-    pcall(function()
-      Loaded = LogoImage.IsLoaded
-    end)
-
-    LogoFallback.Visible = not Loaded
-    LogoImage.Visible = Loaded
-  end
-
-  pcall(function()
-    LogoImage:GetPropertyChangedSignal("IsLoaded"):Connect(UpdateLogoFallback)
-  end)
-
-  task.defer(UpdateLogoFallback)
-  task.delay(1, UpdateLogoFallback)
 
   local TextLabel1 = Custom:Create("TextLabel", {
     Font = Custom.Font,
@@ -894,7 +864,7 @@ function WisHub_Library:CreateWindow(Config)
   for Index = 1, SearchMaxResults do
     local Result = Custom:Create("Frame", {
       BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-      BackgroundTransparency = 0.94,
+      BackgroundTransparency = 0.92,
       BorderSizePixel = 0,
       LayoutOrder = Index,
       Size = UDim2.new(1, 0, 0, 34),
@@ -1365,37 +1335,14 @@ function WisHub_Library:CreateWindow(Config)
     end
   end
 
-  local TabVisualTween = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-  local PageSwitchTween = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
   local function ApplyTabVisual(TabState, IsActive)
-    TabState.ChooseFrame.Visible = true
-
-    TweenService:Create(TabState.Tab, TabVisualTween, {
-      BackgroundColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(255, 255, 255),
-      BackgroundTransparency = IsActive and 0.82 or 0.999
-    }):Play()
-
-    TweenService:Create(TabState.ChooseFrame, TabVisualTween, {
-      Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
-    }):Play()
-
-    TweenService:Create(TabState.NameLabel, TabVisualTween, {
-      TextColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 205, 214)
-    }):Play()
-
-    TweenService:Create(TabState.IconLabel, TabVisualTween, {
-      ImageColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 160),
-      ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
-    }):Play()
-
-    if not IsActive then
-      task.delay(0.14, function()
-        if CurrentTab ~= TabState.Name then
-          TabState.ChooseFrame.Visible = false
-        end
-      end)
-    end
+    TabState.Tab.BackgroundColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(255, 255, 255)
+    TabState.Tab.BackgroundTransparency = IsActive and 0.82 or 0.999
+    TabState.ChooseFrame.Visible = IsActive
+    TabState.ChooseFrame.Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
+    TabState.NameLabel.TextColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 205, 214)
+    TabState.IconLabel.ImageColor3 = IsActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 160)
+    TabState.IconLabel.ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
   end
 
   local function SwitchTab(TabName)
@@ -1406,8 +1353,6 @@ function WisHub_Library:CreateWindow(Config)
     Tabs.CurrentTab = CurrentTab
     WisHub_Library.LastSelectedTab = CurrentTab
     NameTab.Text = CurrentTab
-    NameTab.TextTransparency = 0.28
-    LayersReal.Position = UDim2.new(0, 4, 1, 0)
     CloseFloatingState()
 
     for _, State in ipairs(TabOrder) do
@@ -1427,9 +1372,6 @@ function WisHub_Library:CreateWindow(Config)
         LayersPageLayout:JumpToIndex(TabState.Index)
       end)
     end
-
-    TweenService:Create(NameTab, PageSwitchTween, {TextTransparency = 0}):Play()
-    TweenService:Create(LayersReal, PageSwitchTween, {Position = UDim2.new(0, 0, 1, 0)}):Play()
 
     return true
   end
@@ -1609,7 +1551,6 @@ function WisHub_Library:CreateWindow(Config)
     table.insert(TabOrder, TabState)
 
     TabButton.Activated:Connect(function()
-      CircleClick(TabButton, Player:GetMouse().X, Player:GetMouse().Y)
       SwitchTab(_Name)
     end)
 
@@ -1635,7 +1576,7 @@ function WisHub_Library:CreateWindow(Config)
       local SectionReal = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundTransparency = 0.94,
+        BackgroundTransparency = 0.92,
         BorderColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         LayoutOrder = 1,
@@ -1831,7 +1772,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Paragraph = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.94,
+          BackgroundTransparency = 0.92,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
@@ -1897,60 +1838,65 @@ function WisHub_Library:CreateWindow(Config)
           UpdateParagraphSize()
         end
 
+        ItemCount += 1
         return SettingFuncs
       end
 
-      function Item:AddSeperator(Config)
+      function Item:AddSubSection(Config)
         local Title = Config[1] or Config.Title or ""
-        local Sep_Funcs = {}
+        local Sub_Funcs = {}
 
-        local Seperator = Custom:Create("Frame", {
-          BackgroundColor3 = Color3.fromRGB(70, 70, 70),
-          BackgroundTransparency = 0.1,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 1,
+        local SubSection = Custom:Create("Frame", {
+          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+          BackgroundTransparency = 0.96,
+          BorderSizePixel = 0,
           LayoutOrder = ItemCount,
-          Size = UDim2.new(1, 0, 0, 30),
-          Name = "Seperator",
+          Position = UDim2.new(0, 1, 0, 0),
+          Size = UDim2.new(1, -2, 0, 26),
+          Name = "SubSection",
         }, SectionAdd)
-      
-        local SeperatorTitle = Custom:Create("TextLabel", {
+
+        Custom:Create("UICorner", {
+          CornerRadius = UDim.new(0, 4),
+        }, SubSection)
+
+        Custom:Create("UIStroke", {
+          Color = Color3.fromRGB(255, 255, 255),
+          Thickness = 1,
+          Transparency = 0.9
+        }, SubSection)
+
+        local SubSectionTitle = Custom:Create("TextLabel", {
           Font = Custom.Font,
-          Text = Title,
-          TextColor3 = Color3.fromRGB(231, 231, 231),
-          TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
-          TextStrokeTransparency = 0.8,
-          TextSize = 14,
+          Text = "- [ " .. Title .. " ] -",
+          TextColor3 = Color3.fromRGB(230, 230, 235),
+          TextSize = 12,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Center,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 1,
+          BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
           Position = UDim2.new(0, 12, 0, 0),
-          Size = UDim2.new(1, -16, 1, 0),
-          Name = "SeperatorTitle",
-        }, Seperator)
-        
-        Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 6),
-        }, Seperator)
-        
-        local Gradient = Custom:Create("UIGradient", {
-          Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
-          },
-          Rotation = 90,
-        }, Seperator)
-  
-        function Sep_Funcs:Set(Config)
-          local Title = Config[1] or Config.Title or ""
+          Size = UDim2.new(1, -24, 1, 0),
+          Name = "SubSectionTitle",
+        }, SubSection)
 
-          SeperatorTitle.Text = Title
+        function Sub_Funcs:Set(Config)
+          local NewTitle = Config[1] or Config.Title or ""
+          Title = NewTitle
+          SubSectionTitle.Text = "- [ " .. NewTitle .. " ] -"
         end
 
         ItemCount += 1
-        return Sep_Funcs
+        return Sub_Funcs
+      end
+
+      function Item:AddSeperator(Config)
+        return Item:AddSubSection(Config)
+      end
+
+      function Item:AddSeparator(Config)
+        return Item:AddSubSection(Config)
       end
 
       function Item:AddLine()
@@ -1982,155 +1928,91 @@ function WisHub_Library:CreateWindow(Config)
       function Item:AddButton(Config)
         local Title = Config[1] or Config.Title or ""
         local Content = Config[2] or Config.Content or ""
-        local Icon = Config[3] or Config.Icon or Icons.mouse_pointer_click
         local Callback = Config[4] or Config.Callback or function() end
         local Funcs_Button = {}
 
         local Button = Custom:Create("Frame", {
-					Name = "Button",
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.94,
-					BorderSizePixel = 0,
-					LayoutOrder = ItemCount,
+          Name = "Button",
+          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+          BackgroundTransparency = 0.93,
+          BorderSizePixel = 0,
+          LayoutOrder = ItemCount,
           Position = UDim2.new(0, 1, 0, 0),
-					Size = UDim2.new(1, -2, 0, 35)
-				}, SectionAdd)
+          Size = UDim2.new(1, -2, 0, 31)
+        }, SectionAdd)
 
         Custom:Create("UICorner", {
           CornerRadius = UDim.new(0, 4)
         }, Button)
 
-        Custom:Create("UIStroke", {
-          Color = Custom.ColorRGB,
+        local ButtonStroke = Custom:Create("UIStroke", {
+          Color = Color3.fromRGB(255, 255, 255),
           Thickness = 1,
-          Transparency = 0.78
+          Transparency = 0.9
         }, Button)
 
         Custom:Create("UIGradient", {
           Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.72, Color3.fromRGB(92, 62, 112)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(183, 0, 226))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 225, 232)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 120, 152)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 225, 232))
           },
           Rotation = 0
         }, Button)
 
-        local ButtonAccent = Custom:Create("Frame", {
-          BackgroundColor3 = Custom.ColorRGB,
-          BackgroundTransparency = 0.35,
-          BorderSizePixel = 0,
-          Position = UDim2.new(0, 0, 0, 6),
-          Size = UDim2.new(0, 2, 1, -12),
-          Name = "ButtonAccent"
-        }, Button)
-
-        Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 2)
-        }, ButtonAccent)
-
-        Custom:Create("TextLabel", {
-					Name = "ButtonTitle",
-					Font = Custom.Font,
-					Text = Title,
-					TextColor3 = Color3.fromRGB(231, 231, 231),
-					TextSize = 13,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Top,
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.999,
-					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 7),
-					Size = UDim2.new(1, -76, 0, 13)
-				}, Button)
-
-        local ButtonContent = Custom:Create("TextLabel", {
-					Name = "ButtonContent",
-					Font = Custom.FontBody,
-					Text = Content,
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 12,
-					TextTransparency = 0.6,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Top,
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.999,
-					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 21),
-					Size = UDim2.new(1, -76, 0, 12)
-				}, Button)
-
-        local function UpdateButtonSize()
-          local _Height = 12 + (12 * (ButtonContent.TextBounds.X // ButtonContent.AbsoluteSize.X))
-          ButtonContent.Size = UDim2.new(1, -76, 0, _Height)
-          
-          Button.Size = UDim2.new(1, -2, 0, ButtonContent.AbsoluteSize.Y + 30)
-        end
-      
-        ButtonContent.TextWrapped = true
-        UpdateButtonSize()
-      
-        ButtonContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          ButtonContent.TextWrapped = false
-          UpdateButtonSize()
-          ButtonContent.TextWrapped = true
-          UpdateSizeSection()
-        end)
-
-        local ButtonButton = Custom:Create("TextButton", {
-					Name = "ButtonButton",
-					Font = Custom.Font,
-					Text = "",
-					TextColor3 = Color3.fromRGB(0, 0, 0),
-					TextSize = 14,
-					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-					BackgroundTransparency = 0.999,
-					BorderSizePixel = 0,
-					Size = UDim2.new(1, 0, 1, 0)
-				}, Button)
-
-        local FeatureFrame1 = Custom:Create("Frame", {
-					Name = "FeatureFrame",
-					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.92,
-					BorderSizePixel = 0,
-					Position = UDim2.new(1, -16, 0.5, 0),
-					Size = UDim2.new(0, 20, 0, 20)
-				}, Button)
-
-        Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 6)
-        }, FeatureFrame1)
-
-        Custom:Create("UIStroke", {
-          Color = Custom.ColorRGB,
-          Thickness = 1,
-          Transparency = 0.75
-        }, FeatureFrame1)
-
-        Custom:Create("ImageLabel", {
-          Name = "FeatureImg",
-          Image = Icon,
-          ImageColor3 = Color3.fromRGB(238, 238, 242),
-          AnchorPoint = Vector2.new(0.5, 0.5),
+        local ButtonTitle = Custom:Create("TextLabel", {
+          Name = "ButtonTitle",
+          Font = Custom.Font,
+          Text = Title,
+          TextColor3 = Color3.fromRGB(232, 232, 238),
+          TextSize = 12,
+          TextXAlignment = Enum.TextXAlignment.Center,
+          TextYAlignment = Enum.TextYAlignment.Center,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
-          Position = UDim2.new(0.5, 0, 0.5, 0),
-          Size = UDim2.new(0, 14, 0, 14)
-        }, FeatureFrame1)
+          Position = UDim2.new(0, 10, 0, 0),
+          Size = UDim2.new(1, -20, 1, 0)
+        }, Button)
+
+        local ButtonButton = Custom:Create("TextButton", {
+          Name = "ButtonButton",
+          Font = Custom.Font,
+          Text = "",
+          TextColor3 = Color3.fromRGB(0, 0, 0),
+          TextSize = 14,
+          BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+          BackgroundTransparency = 0.999,
+          BorderSizePixel = 0,
+          Size = UDim2.new(1, 0, 1, 0)
+        }, Button)
+
+        ButtonButton.MouseEnter:Connect(function()
+          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.9}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.78, Color = Custom.ColorRGB}):Play()
+        end)
+
+        ButtonButton.MouseLeave:Connect(function()
+          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.93}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.9, Color = Color3.fromRGB(255, 255, 255)}):Play()
+        end)
 
         ButtonButton.Activated:Connect(function()
-					CircleClick(ButtonButton, Player:GetMouse().X, Player:GetMouse().Y)
-          TweenService:Create(Button, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.9}):Play()
-          task.delay(0.12, function()
+          TweenService:Create(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.87}):Play()
+          task.delay(0.08, function()
             if Button and Button.Parent then
-              TweenService:Create(Button, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.94}):Play()
+              TweenService:Create(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.93}):Play()
             end
           end)
 
-					Callback()
-				end)
+          Callback()
+        end)
+
+        function Funcs_Button:Set(Config)
+          local NewTitle = Config[1] or Config.Title or Title
+          Title = NewTitle
+          ButtonTitle.Text = NewTitle
+        end
 
         RegisterSearchEntry({
           Title = Title,
@@ -2157,7 +2039,7 @@ function WisHub_Library:CreateWindow(Config)
         local Toggle = Custom:Create("Frame", {
 					Name = "Toggle",
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.94,
+					BackgroundTransparency = 0.92,
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
 					Size = UDim2.new(1, 0, 0, 35)
@@ -2314,7 +2196,7 @@ function WisHub_Library:CreateWindow(Config)
         
         local Slider = Custom:Create("Frame", {
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.94,
+					BackgroundTransparency = 0.92,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
@@ -2545,7 +2427,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Input = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.94,
+          BackgroundTransparency = 0.92,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
@@ -2689,7 +2571,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local Dropdown = Custom:Create("Frame", {
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.94,
+          BackgroundTransparency = 0.92,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
