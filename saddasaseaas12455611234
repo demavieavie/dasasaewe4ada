@@ -4,7 +4,6 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
-local TextService = game:GetService("TextService")
 
 local Custom = {} do
   Custom.ColorRGB = Color3.fromRGB(178, 80, 255)
@@ -157,7 +156,7 @@ local function OpenClose()
     Visible = false,
   }, ScreenGui)
 
-  local UICorner = Custom:Create("UICorner", {
+  Custom:Create("UICorner", {
     Name = "MainCorner",
     CornerRadius = UDim.new(0, 12),
   }, Close_ImageButton)
@@ -323,7 +322,7 @@ local DefaultTabIcons = {
   config = "settings",
 }
 
-local WisHub_Library, Notification = {}, {}
+local WisHub_Library = {}
 
 WisHub_Library.Icons = Icons
 WisHub_Library.DefaultTabIcons = DefaultTabIcons
@@ -402,7 +401,7 @@ function WisHub_Library:SetNotification(Config)
     Parent = NotificationFrameReal
   })
 
-  local DropShadow = Custom:Create("ImageLabel", {
+  Custom:Create("ImageLabel", {
     Image = "rbxassetid://6015897843",
     ImageColor3 = Color3.fromRGB(0, 0, 0),
     ImageTransparency = 0.5,
@@ -593,6 +592,7 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundTransparency = 0.11,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
+    ClipsDescendants = true,
     Position = UDim2.new(0.5, 0, 0.5, 0),
     Size = SizeUi,
     Name = "Main"
@@ -825,6 +825,7 @@ function WisHub_Library:CreateWindow(Config)
     BackgroundTransparency = 0.9990000128746033,
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
+    ClipsDescendants = true,
     Position = UDim2.new(0, TabWidth + 18, 0, 50),
     Size = UDim2.new(1, -(TabWidth + 9 + 18), 1, -59),
     Name = "Layers"
@@ -861,7 +862,11 @@ function WisHub_Library:CreateWindow(Config)
     Name = "LayersReal"
   }, Layers)
 
-  local LayersFolder = Custom:Create("Folder", {
+  local LayersFolder = Custom:Create("Frame", {
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ClipsDescendants = true,
+    Size = UDim2.new(1, 0, 1, 0),
     Name = "LayersFolder"
   }, LayersReal)
 
@@ -1637,7 +1642,7 @@ function WisHub_Library:CreateWindow(Config)
         ClipsDescendants = true,
         LayoutOrder = 1,
         Position = UDim2.new(0.5, 0, 0, 0),
-        Size = UDim2.new(1, 1, 0, 30),
+        Size = UDim2.new(1, 0, 0, 30),
         Name = "SectionReal"
       }, Section)
   
@@ -1665,8 +1670,8 @@ function WisHub_Library:CreateWindow(Config)
         BorderColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         ClipsDescendants = true,
-        Position = UDim2.new(1, -5, 0.5, 0),
-        Size = UDim2.new(0, 20, 0, 20),
+        Position = UDim2.new(1, -11, 0.5, 0),
+        Size = UDim2.new(0, 16, 0, 16),
         Name = "FeatureFrame"
       }, SectionReal)
   
@@ -1679,7 +1684,7 @@ function WisHub_Library:CreateWindow(Config)
         BorderSizePixel = 0,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Rotation = -90,
-        Size = UDim2.new(1, 6, 1, 6),
+        Size = UDim2.new(1, 0, 1, 0),
         Name = "FeatureImg"
       }, FeatureFrame)
   
@@ -1764,7 +1769,7 @@ function WisHub_Library:CreateWindow(Config)
     
           TrySet(FeatureFrame, {Rotation = 0})
           SafeTween(FeatureImg, TweenInfo.new(0.1), {Rotation = 0})
-          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, SectionSizeYWitdh)})
+          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, SectionSizeYWitdh)})
           SafeTween(SectionAdd, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, SectionSizeYWitdh - 38)})
           SafeTween(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 2)})
             
@@ -1788,7 +1793,7 @@ function WisHub_Library:CreateWindow(Config)
         if OpenSection then
           TrySet(FeatureFrame, {Rotation = 0})
           SafeTween(FeatureImg, TweenInfo.new(0.1), {Rotation = -90})
-          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, 30)})
+          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 30)})
           SafeTween(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(0, 0, 0, 2)})
     
           OpenSection = false
@@ -1805,6 +1810,7 @@ function WisHub_Library:CreateWindow(Config)
       SectionAdd.ChildRemoved:Connect(UpdateSizeSection)
     
       UpdateSizeScroll()
+      CountSection += 1
 
       local SectionState = {
         Title = Title,
