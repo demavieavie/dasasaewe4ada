@@ -1411,7 +1411,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, Paragraph)
 
-                Custom:Create("TextLabel", {
+                local ParagraphTitle = Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Colors.TextTitle,
@@ -1465,7 +1465,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, Seperator)
 
-                Custom:Create("TextLabel", {
+                local SeperatorTitle = Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
                     TextColor3 = Colors.TextDesc,
@@ -1602,7 +1602,7 @@ function WisHub_Library:CreateWindow(Config)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, Toggle)
 
-                Custom:Create("TextLabel", {
+                local ToggleTitle = Custom:Create("TextLabel", {
                     Font = Custom.Font,
                     Text = Title,
                     TextSize = 12,
