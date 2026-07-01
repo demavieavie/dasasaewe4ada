@@ -58,6 +58,20 @@ local function TrySet(Object, Properties)
   return Ok
 end
 
+local function SafeGet(Object, Property, Fallback)
+  if not Object then return Fallback end
+
+  local Success, Value = pcall(function()
+    return Object[Property]
+  end)
+
+  if Success then
+    return Value
+  end
+
+  return Fallback
+end
+
 local function SafeTween(Object, Info, Properties)
   if not Object then return nil end
 
@@ -1093,13 +1107,13 @@ function WisHub_Library:CreateWindow(Config)
     Entry.SearchText = NormalizeSearchText(Entry.Title .. " " .. Entry.Type .. " " .. Entry.Tab .. " " .. Entry.Section)
     table.insert(SearchRegistry, Entry)
 
-    if SearchBox.Text ~= "" and RefreshSearchResults then
+    if SafeGet(SearchBox, "Text", "") ~= "" and RefreshSearchResults then
       RefreshSearchResults()
     end
   end
 
   RefreshSearchResults = function()
-    local Query = NormalizeSearchText(SearchBox.Text)
+    local Query = NormalizeSearchText(SafeGet(SearchBox, "Text", ""))
     local HasQuery = Query ~= ""
 
     SearchResults.Visible = HasQuery
@@ -1381,6 +1395,14 @@ function WisHub_Library:CreateWindow(Config)
     end)
   end)
 
+  UserInputService.InputChanged:Connect(function(Input)
+    if not ActiveCompactDropdownClose then return end
+    if Input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+    if IsInputInsideObject(Input, ActiveCompactDropdownPopup) then return end
+
+    ActiveCompactDropdownClose()
+  end)
+
   local function ApplyTabVisual(TabState, IsActive)
     local Tween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     TabState.ChooseFrame.Visible = IsActive
@@ -1453,7 +1475,7 @@ function WisHub_Library:CreateWindow(Config)
   SelectSearchEntry = function(Entry)
     if not Entry then return end
 
-    SearchBox.Text = ""
+    TrySet(SearchBox, {Text = ""})
     SearchResults.Visible = false
     ScrollTab.Visible = true
     SwitchTab(Entry.Tab)
@@ -1517,6 +1539,12 @@ function WisHub_Library:CreateWindow(Config)
       SortOrder = Enum.SortOrder.LayoutOrder,
       Parent = ScrolLayers
     })
+
+    ScrolLayers:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+      if ActiveCompactDropdownClose then
+        ActiveCompactDropdownClose()
+      end
+    end)
 
     local Tab = Custom:Create("Frame", {
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -2411,7 +2439,7 @@ function WisHub_Library:CreateWindow(Config)
         function Funcs_Slider:Set(Value)
           Value = math.clamp(Round(Value, Increment), Min, Max)
           Funcs_Slider.Value = Value
-          TextBox.Text = tostring(Value)
+          TrySet(TextBox, {Text = tostring(Value)})
             
           SafeTween(SliderDraggable, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) })
         end
@@ -2454,18 +2482,24 @@ function WisHub_Library:CreateWindow(Config)
         end)
         
         TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-          local Valid = TextBox.Text:gsub("[^%d]", "")
+          local CurrentText = tostring(SafeGet(TextBox, "Text", "0"))
+          local Valid = CurrentText:gsub("[^%d]", "")
           if Valid ~= "" then
             local ValidNumber = math.min(tonumber(Valid), Max)
-            TextBox.Text = tostring(ValidNumber)
+            if CurrentText ~= tostring(ValidNumber) then
+              TrySet(TextBox, {Text = tostring(ValidNumber)})
+            end
           else
-            TextBox.Text = "0"
+            if CurrentText ~= "0" then
+              TrySet(TextBox, {Text = "0"})
+            end
           end
         end)
         
         TextBox.FocusLost:Connect(function()
-          if TextBox.Text ~= "" then
-            Funcs_Slider:Set(tonumber(TextBox.Text))
+          local CurrentText = tostring(SafeGet(TextBox, "Text", ""))
+          if CurrentText ~= "" then
+            Funcs_Slider:Set(tonumber(CurrentText) or 0)
             Callback(Funcs_Slider.Value)
           else
             Funcs_Slider:Set(0)
@@ -2604,7 +2638,7 @@ function WisHub_Library:CreateWindow(Config)
         }, InputFrame)
 
         function Funcs_Input:Set(Value)
-					InputTextBox.Text = Value
+					TrySet(InputTextBox, {Text = Value})
 					Funcs_Input.Value = Value
 					Callback(Value)
 				end
@@ -2614,7 +2648,7 @@ function WisHub_Library:CreateWindow(Config)
         end
 
 				InputTextBox.FocusLost:Connect(function()
-					Funcs_Input:Set(InputTextBox.Text)
+					Funcs_Input:Set(SafeGet(InputTextBox, "Text", Funcs_Input.Value))
 				end)
 
 				Funcs_Input:Set(Default)
@@ -3149,7 +3183,7 @@ function WisHub_Library:CreateWindow(Config)
           }, PopupScroll)
 
           PopupSearch:GetPropertyChangedSignal("Text"):Connect(function()
-            RebuildPopup(PopupSearch.Text)
+            RebuildPopup(SafeGet(PopupSearch, "Text", ""))
           end)
 
           SafeTween(OptionImg, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -3185,7 +3219,7 @@ function WisHub_Library:CreateWindow(Config)
           SetDisplayText()
 
           if PopupScroll then
-            RebuildPopup(PopupSearch and PopupSearch.Text or "")
+            RebuildPopup(SafeGet(PopupSearch, "Text", ""))
           end
         end
 
@@ -3193,7 +3227,7 @@ function WisHub_Library:CreateWindow(Config)
           table.insert(Funcs_Dropdown.Options, OptionName or "Option")
 
           if PopupScroll then
-            RebuildPopup(PopupSearch and PopupSearch.Text or "")
+            RebuildPopup(SafeGet(PopupSearch, "Text", ""))
           end
         end
 
