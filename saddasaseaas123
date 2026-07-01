@@ -1561,6 +1561,7 @@ function WisHub_Library:CreateWindow(Config)
     function Sections:AddSection(Title, OpenSection)
       local Title = Title or ""
       local OpenSection = OpenSection or false
+      local ItemGap = 4
   
       local Section = Custom:Create("Frame", {
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -1679,7 +1680,7 @@ function WisHub_Library:CreateWindow(Config)
       }, SectionAdd)
     
       Custom:Create("UIListLayout", {
-        Padding = UDim.new(0, 3),
+        Padding = UDim.new(0, ItemGap),
         SortOrder = Enum.SortOrder.LayoutOrder
       }, SectionAdd)
   
@@ -1688,7 +1689,7 @@ function WisHub_Library:CreateWindow(Config)
   
         for _, child in pairs(ScrolLayers:GetChildren()) do
           if child.Name ~= "UIListLayout" then
-            OffsetY = OffsetY + 3 + child.Size.Y.Offset
+            OffsetY = OffsetY + ItemGap + child.Size.Y.Offset
           end
         end
         
@@ -1701,7 +1702,7 @@ function WisHub_Library:CreateWindow(Config)
   
           for _, v in pairs(SectionAdd:GetChildren()) do
             if v.Name ~= "UIListLayout" and v.Name ~= "UICorner" then
-              SectionSizeYWitdh = SectionSizeYWitdh + v.Size.Y.Offset + 3
+              SectionSizeYWitdh = SectionSizeYWitdh + v.Size.Y.Offset + ItemGap
             end
           end
     
@@ -1852,7 +1853,7 @@ function WisHub_Library:CreateWindow(Config)
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
           Position = UDim2.new(0, 1, 0, 0),
-          Size = UDim2.new(1, -2, 0, 26),
+          Size = UDim2.new(1, -2, 0, 27),
           Name = "SubSection",
         }, SectionAdd)
 
@@ -1938,7 +1939,7 @@ function WisHub_Library:CreateWindow(Config)
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
           Position = UDim2.new(0, 1, 0, 0),
-          Size = UDim2.new(1, -2, 0, 31)
+          Size = UDim2.new(1, -2, 0, 32)
         }, SectionAdd)
 
         Custom:Create("UICorner", {
