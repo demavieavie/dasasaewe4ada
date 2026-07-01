@@ -1241,7 +1241,7 @@ function WisHub_Library:CreateWindow(Config)
       and Y <= AbsolutePosition.Y + AbsoluteSize.Y
   end
 
-  UserInputService.InputBegan:Connect(function(Input)
+  UserInputService.InputEnded:Connect(function(Input)
     if not ActiveCompactDropdownClose then return end
     if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
     if IsInputInsideObject(Input, ActiveCompactDropdownPopup) or IsInputInsideObject(Input, ActiveCompactDropdownField) then return end
@@ -1866,8 +1866,8 @@ function WisHub_Library:CreateWindow(Config)
 
         local Button = Custom:Create("Frame", {
           Name = "Button",
-          BackgroundColor3 = Custom.Surface2,
-          BackgroundTransparency = 0.16,
+          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+          BackgroundTransparency = 0.92,
           BorderSizePixel = 0,
           ClipsDescendants = true,
           LayoutOrder = ItemCount,
@@ -1879,20 +1879,15 @@ function WisHub_Library:CreateWindow(Config)
           CornerRadius = UDim.new(0, 4)
         }, Button)
 
+        local ButtonScale = Custom:Create("UIScale", {
+          Scale = 1
+        }, Button)
+
         local ButtonStroke = Custom:Create("UIStroke", {
           Color = Custom.Stroke,
           ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
           Thickness = 0,
           Transparency = 1
-        }, Button)
-
-        Custom:Create("UIGradient", {
-          Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 31, 43)),
-            ColorSequenceKeypoint.new(0.52, Custom.Surface),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(42, 25, 58))
-          },
-          Rotation = 0
         }, Button)
 
         local ButtonTitle = Custom:Create("TextLabel", {
@@ -1923,20 +1918,22 @@ function WisHub_Library:CreateWindow(Config)
         }, Button)
 
         ButtonButton.MouseEnter:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
+          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.87}):Play()
           TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.ColorRGB}):Play()
         end)
 
         ButtonButton.MouseLeave:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
+          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.92}):Play()
           TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.Stroke}):Play()
         end)
 
         ButtonButton.Activated:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.06}):Play()
+          TweenService:Create(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.8}):Play()
+          TweenService:Create(ButtonScale, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.985}):Play()
           task.delay(0.08, function()
             if Button and Button.Parent then
-              TweenService:Create(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
+              TweenService:Create(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.92}):Play()
+              TweenService:Create(ButtonScale, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
             end
           end)
 
@@ -2100,8 +2097,9 @@ function WisHub_Library:CreateWindow(Config)
       
         function Funcs_Toggle:Set(Value)
           Funcs_Toggle.Value = Value
-          Callback(Value)
+          local Result = Callback(Value)
           ToggleAnimation(Value)
+          return Result
         end
         Funcs_Toggle:Set(Funcs_Toggle.Value)
 
@@ -2729,6 +2727,30 @@ function WisHub_Library:CreateWindow(Config)
           end
         end
 
+        local function UpdatePopupSelectionVisuals()
+          if not PopupScroll then return end
+
+          for _, Option in ipairs(PopupScroll:GetChildren()) do
+            if Option:IsA("Frame") and Option.Name == "Option" then
+              local OptionText = Option:FindFirstChild("OptionText")
+              local ChooseFrame = Option:FindFirstChild("ChooseFrame")
+
+              if OptionText and ChooseFrame then
+                local Selected = table.find(Funcs_Dropdown.Value, OptionText.Text) ~= nil
+
+                TweenService:Create(Option, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                  BackgroundColor3 = Selected and Color3.fromRGB(48, 24, 70) or Custom.Surface3,
+                  BackgroundTransparency = Selected and 0.08 or 0.999
+                }):Play()
+
+                TweenService:Create(ChooseFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                  Size = Selected and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
+                }):Play()
+              end
+            end
+          end
+        end
+
         local function RebuildPopup(FilterText)
           if not PopupScroll then return end
 
@@ -2806,14 +2828,16 @@ function WisHub_Library:CreateWindow(Config)
               }, Option)
 
               OptionButton.MouseEnter:Connect(function()
+                local IsSelectedNow = table.find(Funcs_Dropdown.Value, OptionName) ~= nil
                 TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                  BackgroundTransparency = Selected and 0.08 or 0.18
+                  BackgroundTransparency = IsSelectedNow and 0.08 or 0.18
                 }):Play()
               end)
 
               OptionButton.MouseLeave:Connect(function()
+                local IsSelectedNow = table.find(Funcs_Dropdown.Value, OptionName) ~= nil
                 TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                  BackgroundTransparency = Selected and 0.08 or 0.999
+                  BackgroundTransparency = IsSelectedNow and 0.08 or 0.999
                 }):Play()
               end)
 
@@ -2832,14 +2856,6 @@ function WisHub_Library:CreateWindow(Config)
                 end
 
                 Funcs_Dropdown:Set(Funcs_Dropdown.Value)
-
-                if Multi then
-                  RebuildPopup(PopupSearch and PopupSearch.Text or "")
-                else
-                  if ActiveCompactDropdownClose then
-                    ActiveCompactDropdownClose()
-                  end
-                end
               end)
             end
           end
@@ -3015,7 +3031,7 @@ function WisHub_Library:CreateWindow(Config)
           SetDisplayText()
 
           if PopupScroll then
-            RebuildPopup(PopupSearch and PopupSearch.Text or "")
+            UpdatePopupSelectionVisuals()
           end
 
           Callback(Funcs_Dropdown.Value)
@@ -3184,6 +3200,25 @@ function WisHub_Library:CreateWindow(Config)
           return Result
         end
 
+        local function ApplyAutoLoad(Enabled, Name)
+          autoLoadEnabled = Enabled == true
+          Name = Name or (selectedConfig ~= "" and selectedConfig or ResolveName())
+
+          if autoLoadEnabled and Name == "" then
+            autoLoadEnabled = false
+            return false
+          end
+
+          local Handler = Config.OnAutoLoadToggle or Config.SetAutoLoad or Config.OnAutoLoad or Config.AutoLoad
+          local Result = Handler and Handler(Name, autoLoadEnabled) or autoLoadEnabled
+
+          if Result ~= false and Name ~= "" then
+            SyncSelected(type(Result) == "string" and Result or Name)
+          end
+
+          return Result
+        end
+
         local AutoLoadReady = false
         local AutoLoadToggle = Item:AddToggle({
           Title = Config.AutoLoadText or "Auto Load",
@@ -3193,21 +3228,7 @@ function WisHub_Library:CreateWindow(Config)
             autoLoadEnabled = Enabled == true
             if not AutoLoadReady then return end
 
-            local Name = selectedConfig ~= "" and selectedConfig or ResolveName()
-
-            if autoLoadEnabled and Name == "" then
-              autoLoadEnabled = false
-              return false
-            end
-
-            local Handler = Config.OnAutoLoadToggle or Config.SetAutoLoad or Config.OnAutoLoad or Config.AutoLoad
-            local Result = Handler and Handler(Name, autoLoadEnabled) or autoLoadEnabled
-
-            if Result ~= false and Name ~= "" then
-              SyncSelected(type(Result) == "string" and Result or Name)
-            end
-
-            return Result
+            return ApplyAutoLoad(Enabled)
           end
         })
         AutoLoadReady = true
@@ -3216,6 +3237,21 @@ function WisHub_Library:CreateWindow(Config)
           Title = Config.SaveText or "Save",
           Content = Config.SaveContent or "",
           Callback = DoSave
+        })
+
+        Item:AddButton({
+          Title = Config.SetAutoLoadText or "Set as Auto Load",
+          Content = Config.SetAutoLoadContent or "",
+          Callback = function()
+            local Saved = DoSave()
+            if Saved == false then return false end
+
+            if AutoLoadToggle and AutoLoadToggle.Set then
+              return AutoLoadToggle:Set(true)
+            end
+
+            return ApplyAutoLoad(true, type(Saved) == "string" and Saved or selectedConfig)
+          end
         })
 
         local ConfigPanel = {}
