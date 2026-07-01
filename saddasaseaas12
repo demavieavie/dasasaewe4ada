@@ -9,10 +9,70 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local Custom = {}
 Custom.ColorRGB = Color3.fromRGB(183, 0, 226)
+Custom.ObsidianTop = Color3.fromRGB(15, 14, 22)
+Custom.ObsidianMid = Color3.fromRGB(6, 7, 12)
+Custom.ObsidianLow = Color3.fromRGB(26, 14, 38)
+Custom.Surface = Color3.fromRGB(18, 19, 27)
+Custom.Surface2 = Color3.fromRGB(23, 22, 32)
+Custom.Surface3 = Color3.fromRGB(31, 27, 42)
+Custom.Stroke = Color3.fromRGB(112, 63, 176)
+Custom.Text = Color3.fromRGB(235, 236, 245)
+Custom.Muted = Color3.fromRGB(156, 154, 170)
 Custom.Font = Enum.Font.GothamBold
 Custom.FontBody = Enum.Font.Gotham
 Custom.GuiName = "WisHub_Main_UI"
 Custom.ToggleGuiName = "WisHub_Toggle_UI"
+
+local Icons = {
+    bag = "rbxassetid://8601111810",
+    cart = "rbxassetid://128874923961846",
+    config = "rbxassetid://70386228443175",
+    discord = "rbxassetid://94434236999817",
+    eyes = "rbxassetid://14321059114",
+    farm = "rbxassetid://97167558235554",
+    idea = "rbxassetid://16833255748",
+    menu = "rbxassetid://6340513838",
+    misc = "rbxassetid://16833255748",
+    pet = "rbxassetid://137601480983962",
+    scan = "rbxassetid://109869955247116",
+    settings = "rbxassetid://70386228443175",
+    shop = "rbxassetid://6340513838",
+    star = "rbxassetid://107005941750079",
+    visual = "rbxassetid://70386228443175",
+}
+
+local DefaultTabIcons = {
+    info = "idea",
+    farm = "loop",
+    shop = "shop",
+    pet = "player",
+    misc = "menu",
+    visual = "eyes",
+    config = "settings",
+}
+
+local function ResolveAsset(asset)
+    if asset == nil then return "" end
+    asset = tostring(asset)
+    if asset == "" then return "" end
+    if Icons[string.lower(asset)] then return Icons[string.lower(asset)] end
+    if tonumber(asset) then return "rbxassetid://" .. asset end
+    return asset
+end
+
+local function NormalizeTabName(tabName)
+    local text = tostring(tabName or "")
+    text = text:gsub("%[", ""):gsub("%]", "")
+    text = text:gsub("^%s+", ""):gsub("%s+$", "")
+    return string.lower(text)
+end
+
+local function ResolveTabIcon(tabName, explicitIcon)
+    local icon = ResolveAsset(explicitIcon)
+    if icon ~= "" then return icon end
+    local iconKey = DefaultTabIcons[NormalizeTabName(tabName)]
+    return iconKey and ResolveAsset(iconKey) or ""
+end
 
 function Custom:Create(Name, Properties, Parent)
     local _instance = Instance.new(Name)
@@ -141,7 +201,7 @@ WisHub_Library.Unloaded = false
 
 function WisHub_Library:SetNotification(Config)
     local Title = Config[1] or Config.Title or ""
-    local Description = Config[2] or Config.Description or ""
+    local Description = Config[2] or Config.Description or Config.Footer or ""
     local Content = Config[3] or Config.Content or ""
     local Time = Config[5] or Config.Time or 0.5
     local Delay = Config[6] or Config.Delay or 5
@@ -232,35 +292,38 @@ function WisHub_Library:SetNotification(Config)
 end
 
 function WisHub_Library:CreateWindow(Config)
+    Config = Config or {}
     local Title = Config[1] or Config.Title or ""
     local Description = Config[2] or Config.Description or ""
     local TabWidth = Config[3] or Config["Tab Width"] or 120
     local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(600, 350)
     local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
-    local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
-    local LogoAsset = Config.Logo or Config.LogoIcon or Config.Image
-    if not LogoAsset and tostring(Title):find("rbxasset") then
-        LogoAsset = Title
+    local DiscordLogo = ResolveAsset(Config.DiscordIcon or Config[6] or "discord")
+    local LogoAsset = ResolveAsset(Config.Logo or Config.LogoIcon or Config.TitleLogo or Config.Image or "rbxassetid://105006444774299")
+    if LogoAsset == "" and tostring(Title):find("rbxasset") then
+        LogoAsset = ResolveAsset(Title)
         Title = ""
     end
-    local LogoSize = Config.LogoSize or 22
+    local UseTextLogo = LogoAsset == "rbxassetid://117265667838927"
+    local LogoSize = Config.LogoSize or 18
+    local MainTransparency = Config.MainTransparency or Config.BackgroundTransparency or Config.Transparency or 0.11
 
     -- Color palette (consistent throughout)
     local Colors = {
-        MainBg = Color3.fromRGB(18, 16, 24),
-        RowBg = Color3.fromRGB(32, 28, 44),          -- Slightly darker row bg for glass effect
-        RowBgHover = Color3.fromRGB(38, 34, 52),
-        RowBgSelected = Color3.fromRGB(45, 40, 65),
-        TabBg = Color3.fromRGB(30, 28, 38),
-        TabBgActive = Color3.fromRGB(40, 36, 58),
-        DropdownBg = Color3.fromRGB(22, 18, 32),     -- Darker for dropdown popup
-        DropdownOption = Color3.fromRGB(32, 28, 44),
-        DropdownOptionHover = Color3.fromRGB(40, 36, 58),
-        BorderSubtle = Color3.fromRGB(55, 45, 90),  -- Subtle purple border
-        BorderHighlight = Color3.fromRGB(80, 65, 130), -- Highlighted border
-        TextTitle = Color3.fromRGB(235, 235, 245),   -- Near-white for titles
-        TextDesc = Color3.fromRGB(155, 155, 165),    -- Medium gray for descriptions
-        TextMuted = Color3.fromRGB(120, 120, 130),  -- Muted text
+        MainBg = Color3.fromRGB(0, 0, 0),
+        RowBg = Custom.Surface2,
+        RowBgHover = Color3.fromRGB(34, 32, 45),
+        RowBgSelected = Color3.fromRGB(48, 24, 70),
+        TabBg = Color3.fromRGB(255, 255, 255),
+        TabBgActive = Color3.fromRGB(48, 24, 70),
+        DropdownBg = Custom.Surface3,
+        DropdownOption = Custom.Surface2,
+        DropdownOptionHover = Color3.fromRGB(40, 34, 56),
+        BorderSubtle = Custom.Stroke,
+        BorderHighlight = Color3.fromRGB(140, 84, 205),
+        TextTitle = Custom.Text,
+        TextDesc = Custom.Muted,
+        TextMuted = Color3.fromRGB(124, 122, 140),
         Purple = Custom.ColorRGB,
     }
 
@@ -486,6 +549,7 @@ function WisHub_Library:CreateWindow(Config)
     local Main = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Colors.MainBg,
+        BackgroundTransparency = MainTransparency,
         BorderColor3 = Colors.BorderSubtle,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = SizeUi,
@@ -493,6 +557,14 @@ function WisHub_Library:CreateWindow(Config)
     }, DropShadow)
 
     Custom:Create("UICorner", {}, Main)
+    Custom:Create("UIGradient", {
+        Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Custom.ObsidianTop),
+            ColorSequenceKeypoint.new(0.52, Custom.ObsidianMid),
+            ColorSequenceKeypoint.new(1, Custom.ObsidianLow)
+        },
+        Rotation = 16
+    }, Main)
     Custom:Create("UIStroke", {Color = Colors.BorderSubtle, Thickness = 1.5}, Main)
 
     -- Top bar
@@ -502,24 +574,38 @@ function WisHub_Library:CreateWindow(Config)
         Name = "Top"
     }, Main)
 
-    local HeaderTextX = LogoAsset and (LogoSize + 20) or 10
+    local HeaderTextX = LogoAsset and (LogoSize + 30) or 10
 
     if LogoAsset and LogoAsset ~= "" then
-        Custom:Create("ImageLabel", {
-            Image = LogoAsset,
-            ImageColor3 = Custom.ColorRGB,
-            ScaleType = Enum.ScaleType.Fit,
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, 12, 0.5, 0),
-            Size = UDim2.new(0, LogoSize, 0, LogoSize),
-            Name = "Logo"
-        }, Top)
+        if UseTextLogo then
+            Custom:Create("TextLabel", {
+                Font = Custom.Font,
+                Text = "W",
+                TextColor3 = Custom.ColorRGB,
+                TextSize = 17,
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 17, 0.5, 0),
+                Size = UDim2.new(0, LogoSize, 0, LogoSize),
+                Name = "Logo"
+            }, Top)
+        else
+            Custom:Create("ImageLabel", {
+                Image = LogoAsset,
+                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ScaleType = Enum.ScaleType.Fit,
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 17, 0.5, 0),
+                Size = UDim2.new(0, LogoSize, 0, LogoSize),
+                Name = "Logo"
+            }, Top)
+        end
     end
 
     local TextLabel = Custom:Create("TextLabel", {
         Font = Custom.Font,
-        Text = Title,
+        Text = LogoAsset ~= "" and "" or Title,
         TextColor3 = Custom.ColorRGB,
         TextSize = 18,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1112,9 +1198,9 @@ function WisHub_Library:CreateWindow(Config)
 
     function Tabs:CreateTab(Config)
         local _Name = Config[1] or Config.Name or ""
-        local Icon = Config[2] or Config.Icon or ""
+        local Icon = ResolveTabIcon(_Name, Config[2] or Config.Icon)
 
-        local tabData = {name = _Name, icon = Icon, sections = {}, frame = nil, page = nil}
+        local tabData = {name = _Name, icon = Icon, sections = {}, frame = nil, page = nil, iconObject = nil}
         table.insert(allTabs, tabData)
 
         local ScrolLayers = Custom:Create("ScrollingFrame", {
@@ -1139,8 +1225,9 @@ function WisHub_Library:CreateWindow(Config)
         -- Optimized Tab button
         local Tab = Custom:Create("Frame", {
             BackgroundColor3 = Colors.TabBg,
+            BackgroundTransparency = 0.999,
             LayoutOrder = CountTab,
-            Size = UDim2.new(1, 0, 0, 28),
+            Size = UDim2.new(1, 0, 0, 30),
             Name = "Tab",
             Parent = ScrollTab
         })
@@ -1169,19 +1256,26 @@ function WisHub_Library:CreateWindow(Config)
             Name = "TabName",
         }, Tab)
 
-        Custom:Create("ImageLabel", {
+        local TabIcon = Custom:Create("ImageLabel", {
             Image = Icon,
+            ImageColor3 = Colors.TextDesc,
+            ImageTransparency = Icon == "" and 1 or 0.25,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0, 9, 0, 7),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 9, 0.5, 0),
             Size = UDim2.new(0, 16, 0, 16),
             Name = "FeatureImg",
         }, Tab)
+        tabData.iconObject = TabIcon
 
         -- First tab selection
         if CountTab == 0 then
             LayersPageLayout:JumpToIndex(0)
             NameTab.Text = _Name
             Tab.BackgroundColor3 = Colors.TabBgActive
+            Tab.BackgroundTransparency = 0.12
+            TabIcon.ImageColor3 = Custom.ColorRGB
+            TabIcon.ImageTransparency = Icon == "" and 1 or 0
 
             local ChooseFrame = Custom:Create("Frame", {
                 BackgroundColor3 = Custom.ColorRGB,
@@ -1207,13 +1301,26 @@ function WisHub_Library:CreateWindow(Config)
                 for _, TabFrame in pairs(ScrollTab:GetChildren()) do
                     if TabFrame:IsA("Frame") and TabFrame.Name == "Tab" then
                         TweenService:Create(TabFrame, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            BackgroundColor3 = Colors.TabBg
+                            BackgroundColor3 = Colors.TabBg,
+                            BackgroundTransparency = 0.999
                         }):Play()
+                        local oldIcon = TabFrame:FindFirstChild("FeatureImg")
+                        if oldIcon then
+                            TweenService:Create(oldIcon, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                                ImageColor3 = Colors.TextDesc,
+                                ImageTransparency = oldIcon.Image == "" and 1 or 0.25
+                            }):Play()
+                        end
                     end
                 end
 
                 TweenService:Create(Tab, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Colors.TabBgActive
+                    BackgroundColor3 = Colors.TabBgActive,
+                    BackgroundTransparency = 0.12
+                }):Play()
+                TweenService:Create(TabIcon, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    ImageColor3 = Custom.ColorRGB,
+                    ImageTransparency = Icon == "" and 1 or 0
                 }):Play()
 
                 local targetY = 8 + (31 * Tab.LayoutOrder)
@@ -1504,22 +1611,30 @@ function WisHub_Library:CreateWindow(Config)
                 local Content = Config[2] or Config.Content or ""
                 local Icon = Config[3]
                 if Icon == nil then Icon = Config.Icon end
+                Icon = ResolveAsset(Icon)
                 local Callback = Config[4] or Config.Callback or function() end
                 local Centered = Config.Centered or Config.Center or (Content == "" and (Icon == nil or Icon == ""))
-                if Icon == nil and not Centered then
-                    Icon = "rbxassetid://7734010488"
-                end
 
                 local Button = Custom:Create("Frame", {
-                    BackgroundColor3 = Centered and Colors.DropdownBg or Colors.RowBg,
+                    BackgroundColor3 = Centered and Custom.Surface2 or Colors.RowBg,
+                    BackgroundTransparency = Centered and 0.16 or 0,
                     LayoutOrder = ItemCount,
                     Size = UDim2.new(1, 0, 0, Centered and 34 or 34),
                     Name = "Button"
                 }, SectionAdd)
 
                 Custom:Create("UICorner", {CornerRadius = UDim.new(0, 4)}, Button)
+                local ButtonStroke = nil
                 if Centered then
-                    Custom:Create("UIStroke", {Color = Custom.ColorRGB, Thickness = 1, Transparency = 0.25}, Button)
+                    ButtonStroke = Custom:Create("UIStroke", {Color = Custom.Stroke, Thickness = 1, Transparency = 0.78}, Button)
+                    Custom:Create("UIGradient", {
+                        Color = ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 31, 43)),
+                            ColorSequenceKeypoint.new(0.52, Custom.Surface),
+                            ColorSequenceKeypoint.new(1, Color3.fromRGB(42, 25, 58))
+                        },
+                        Rotation = 0
+                    }, Button)
                 end
 
                 local ButtonTitle = Custom:Create("TextLabel", {
@@ -1577,9 +1692,29 @@ function WisHub_Library:CreateWindow(Config)
                 end
 
                 ButtonButton.Activated:Connect(function()
+                    if Centered then
+                        TweenService:Create(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.06}):Play()
+                        task.delay(0.08, function()
+                            if Button and Button.Parent then
+                                TweenService:Create(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
+                            end
+                        end)
+                    end
                     CircleClick(ButtonButton, Player:GetMouse().X, Player:GetMouse().Y)
                     Callback()
                 end)
+
+                if Centered and ButtonStroke then
+                    ButtonButton.MouseEnter:Connect(function()
+                        TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
+                        TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.45, Color = Custom.ColorRGB}):Play()
+                    end)
+
+                    ButtonButton.MouseLeave:Connect(function()
+                        TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
+                        TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.78, Color = Custom.Stroke}):Play()
+                    end)
+                end
 
                 ItemCount = ItemCount + 1
                 return {}
