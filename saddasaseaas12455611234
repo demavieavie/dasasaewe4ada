@@ -1936,8 +1936,14 @@ function WisHub_Library:CreateWindow(Config)
       end
 
       function Item:AddSubSection(Config)
-        local Title = Config[1] or Config.Title or ""
+        local Title = type(Config) == "table" and (Config[1] or Config.Title) or Config
+        Title = tostring(Title or ""):gsub("^%s+", ""):gsub("%s+$", "")
         local Sub_Funcs = {}
+
+        if Title == "" then
+          function Sub_Funcs:Set() end
+          return Sub_Funcs
+        end
 
         local SubSection = Custom:Create("Frame", {
           BackgroundColor3 = Custom.Surface3,
@@ -1975,9 +1981,10 @@ function WisHub_Library:CreateWindow(Config)
         }, SubSection)
 
         function Sub_Funcs:Set(Config)
-          local NewTitle = Config[1] or Config.Title or ""
+          local NewTitle = type(Config) == "table" and (Config[1] or Config.Title) or Config
+          NewTitle = tostring(NewTitle or ""):gsub("^%s+", ""):gsub("%s+$", "")
           Title = NewTitle
-          SubSectionTitle.Text = "- [ " .. NewTitle .. " ] -"
+          SubSectionTitle.Text = NewTitle == "" and "" or "- [ " .. NewTitle .. " ] -"
         end
 
         ItemCount += 1
@@ -2196,54 +2203,59 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundColor3 = Color3.fromRGB(0, 0, 0),
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
-          Size = UDim2.new(1, 0, 1, 0)
+          Size = UDim2.new(1, 0, 1, 0),
+          ZIndex = 5
         }, Toggle)
 
         
 				local FeatureFrame2 = Custom:Create("Frame", {
 					Name = "FeatureFrame2",
 					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundColor3 = Color3.fromRGB(58, 58, 66),
-					BackgroundTransparency = 0.1,
+					BackgroundColor3 = Color3.fromRGB(44, 44, 52),
+					BackgroundTransparency = 0.12,
 					BorderSizePixel = 0,
-					Position = UDim2.new(1, -14, 0.5, 0),
-					Size = UDim2.new(0, 28, 0, 14)
+					Position = UDim2.new(1, -16, 0.5, 0),
+					Size = UDim2.new(0, 36, 0, 18),
+					ZIndex = 3
 				}, Toggle)
 
         Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 4)
+          CornerRadius = UDim.new(1, 0)
         }, FeatureFrame2)
       
         local UIStroke8 = Custom:Create("UIStroke", {
           Color = Custom.Stroke,
-          Thickness = 2,
-          Transparency = 0.78
+          Thickness = 1,
+          Transparency = 0.45
         }, FeatureFrame2)
 
         local ToggleCircle = Custom:Create("Frame", {
 					Name = "ToggleCircle",
-					BackgroundColor3 = Color3.fromRGB(230, 230, 230),
+					BackgroundColor3 = Color3.fromRGB(245, 245, 248),
 					BorderSizePixel = 0,
-					Size = UDim2.new(0, 12, 0, 12),
-					Position = UDim2.new(0, 0, 0, 0)
+					Size = UDim2.new(0, 14, 0, 14),
+					Position = UDim2.new(0, 2, 0, 2),
+					ZIndex = 4
 				}, FeatureFrame2)
 
         Custom:Create("UICorner", {
           CornerRadius = UDim.new(0, 15)
         }, ToggleCircle)
 
-        local function ToggleAnimation(isOn)          
+        local function ToggleAnimation(isOn)
+          isOn = isOn == true
           local TitleColor = isOn and Custom.ColorRGB or Color3.fromRGB(230, 230, 230)
-          local CirclePosition = isOn and UDim2.new(0, 15, 0, 1) or UDim2.new(0, 1, 0, 1)
+          local CirclePosition = isOn and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2)
           local StrokeColor = isOn and Custom.ColorRGB or Custom.Stroke
-          local StrokeTransparency = isOn and 0.08 or 0.78
-          local FrameColor = isOn and Custom.ColorRGB or Color3.fromRGB(58, 58, 66)
-          local FrameTransparency = isOn and 0.08 or 0.1
+          local StrokeTransparency = isOn and 0.02 or 0.45
+          local FrameColor = isOn and Custom.ColorRGB or Color3.fromRGB(44, 44, 52)
+          local FrameTransparency = isOn and 0.0 or 0.12
+          local CircleColor = isOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(245, 245, 248)
 
           local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
       
           SafeTween(ToggleTitle, tweenInfo, {TextColor3 = TitleColor})
-          SafeTween(ToggleCircle, tweenInfo, {Position = CirclePosition})
+          SafeTween(ToggleCircle, tweenInfo, {Position = CirclePosition, BackgroundColor3 = CircleColor})
           SafeTween(UIStroke8, tweenInfo, {Color = StrokeColor, Transparency = StrokeTransparency})
           SafeTween(FeatureFrame2, tweenInfo, {BackgroundColor3 = FrameColor, BackgroundTransparency = FrameTransparency})
         end
@@ -2255,9 +2267,13 @@ function WisHub_Library:CreateWindow(Config)
         end)
       
         function Funcs_Toggle:Set(Value)
+          Value = Value == true
           Funcs_Toggle.Value = Value
           local Result = Callback(Value)
-          ToggleAnimation(Value)
+          if Result == false then
+            Funcs_Toggle.Value = false
+          end
+          ToggleAnimation(Funcs_Toggle.Value)
           return Result
         end
         Funcs_Toggle:Set(Funcs_Toggle.Value)
@@ -2667,7 +2683,6 @@ function WisHub_Library:CreateWindow(Config)
 				return Funcs_Input
       end
 
-      -- Compact dropdown override; keeps the legacy API while avoiding the old side overlay.
       function Item:AddDropdown(Config)
         local Title = Config[1] or Config.Title or ""
         local Content = Config[2] or Config.Content or ""
