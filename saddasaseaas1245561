@@ -391,7 +391,7 @@ function WisHub_Library:SetNotification(Config)
     Parent = NotificationFrameReal
   })
 
-  TextLabel2.Size = UDim2.new(1, -20, 0, 13 + (13 * (TextLabel2.TextBounds.X // TextLabel2.AbsoluteSize.X)))
+  TextLabel2.Size = UDim2.new(1, -20, 0, 13 + (13 * (TextLabel2.TextBounds.X // math.max(1, TextLabel2.AbsoluteSize.X))))
   TextLabel2.TextWrapped = true
 
   if TextLabel2.AbsoluteSize.Y < 27 then
@@ -491,8 +491,8 @@ function WisHub_Library:CreateWindow(Config)
 
   Custom:Create("UIStroke", {
     Color = Custom.Stroke,
-    Thickness = 1.6,
-    Transparency = 0.12
+    Thickness = 1,
+    Transparency = 0.86
   }, Main)
 
   local Top = Custom:Create("Frame", {
@@ -526,6 +526,7 @@ function WisHub_Library:CreateWindow(Config)
     ImageColor3 = HubLogoColor,
     ImageTransparency = 0,
     ScaleType = Enum.ScaleType.Fit,
+    ClipsDescendants = true,
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     AnchorPoint = Vector2.new(0, 0.5),
@@ -533,6 +534,10 @@ function WisHub_Library:CreateWindow(Config)
     Size = UDim2.new(0, HubLogoSize, 0, HubLogoSize),
     Name = "LogoImage"
   }, Top)
+
+  Custom:Create("UICorner", {
+    CornerRadius = UDim.new(0, math.floor(HubLogoSize / 4))
+  }, LogoImage)
 
   local TextLabel1 = Custom:Create("TextLabel", {
     Font = Custom.Font,
@@ -572,7 +577,7 @@ function WisHub_Library:CreateWindow(Config)
   Custom:Create("UIStroke", {
     Color = Custom.ColorRGB,
     Thickness = 1,
-    Transparency = 0.25
+    Transparency = 0.62
   }, DiscordPill)
 
   local DiscordIcon = Custom:Create("ImageLabel", {
@@ -784,7 +789,7 @@ function WisHub_Library:CreateWindow(Config)
   Custom:Create("UIStroke", {
     Color = Custom.ColorRGB,
     Thickness = 1,
-    Transparency = 0.55
+    Transparency = 0.72
   }, SearchTab)
 
   Custom:Create("ImageLabel", {
@@ -1181,125 +1186,6 @@ function WisHub_Library:CreateWindow(Config)
 	MakeDraggable(Top, DropShadowHolder)
 
 
-  local MoreBlur = Custom:Create("Frame", {
-    AnchorPoint = Vector2.new(1, 1),
-    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    BackgroundTransparency = 1,
-    BorderColor3 = Color3.fromRGB(0, 0, 0),
-    BorderSizePixel = 0,
-    ClipsDescendants = true,
-    Position = UDim2.new(1, 8, 1, 8),
-    Size = UDim2.new(1, 154, 1, 54),
-    Visible = false,
-    Name = "MoreBlur"
-  }, Layers)
-
-  local DropShadowHolder1 = Custom:Create("Frame", {
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 1, 0),
-    ZIndex = 0,
-    Name = "DropShadowHolder"
-  }, MoreBlur)
-
-  local DropShadow1 = Custom:Create("ImageLabel", {
-    Image = "rbxassetid://6015897843",
-    ImageColor3 = Color3.fromRGB(0, 0, 0),
-    ImageTransparency = 0.5,
-    ScaleType = Enum.ScaleType.Slice,
-    SliceCenter = Rect.new(49, 49, 450, 450),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.new(1, 35, 1, 35),
-    ZIndex = 0,
-    Name = "DropShadow"
-  }, DropShadowHolder1)
-
-  Custom:Create("UICorner", {}, MoreBlur)
-
-  local ConnectButton = Custom:Create("TextButton", {
-		Font = Custom.Font,
-		Text = "",
-		TextColor3 = Color3.fromRGB(0, 0, 0),
-		TextSize = 14,
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		BackgroundTransparency = 0.999,
-		BorderColor3 = Color3.fromRGB(0, 0, 0),
-		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 1, 0),
-		Name = "ConnectButton",
-	}, MoreBlur)
-
-  local DropdownSelect = Custom:Create("Frame", {
-    AnchorPoint = Vector2.new(1, 0.5),
-    BackgroundColor3 = Custom.Surface2,
-    BackgroundTransparency = 0.08,
-    BorderColor3 = Color3.fromRGB(0, 0, 0),
-    BorderSizePixel = 0,
-    LayoutOrder = 1,
-    Position = UDim2.new(1, 172, 0.5, 0),
-    Size = UDim2.new(0, 160, 1, -16),
-    Name = "DropdownSelect",
-    ClipsDescendants = true,
-  }, MoreBlur)
-
-  ConnectButton.Activated:Connect(function()
-    if MoreBlur.Visible then
-      local tweenInfo = TweenInfo.new(0.2)
-
-      local _Hide = TweenService:Create(MoreBlur, tweenInfo, {BackgroundTransparency = 0.999})
-      local _Move = TweenService:Create(DropdownSelect, tweenInfo, {Position = UDim2.new(1, 172, 0.5, 0)})
-
-      _Hide:Play()
-      _Move:Play()
-        
-      task.wait(0.2)
-      MoreBlur.Visible = false
-    end
-  end)
-
-  Custom:Create("UICorner", {
-    CornerRadius = UDim.new(0, 3),
-    Parent = DropdownSelect
-  })
-
-  Custom:Create("UIStroke", {
-    Color = Custom.ColorRGB,
-    Thickness = 1,
-    Transparency = 0.6,
-    Parent = DropdownSelect
-  })
-
-  local DropdownSelectReal = Custom:Create("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		BackgroundTransparency = 0.999,
-		BorderColor3 = Color3.fromRGB(0, 0, 0),
-		BorderSizePixel = 0,
-		LayoutOrder = 1,
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(1, -10, 1, -10),
-		Name = "DropdownSelectReal",
-		Parent = DropdownSelect
-	})
-
-  local DropdownFolder = Custom:Create("Folder", {
-		Name = "DropdownFolder",
-		Parent = DropdownSelectReal
-	})
-
-  local DropPageLayout = Custom:Create("UIPageLayout", {
-    EasingDirection = Enum.EasingDirection.InOut,
-    EasingStyle = Enum.EasingStyle.Quad,
-    TweenTime = 0.01,
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Archivable = false,
-    Name = "DropPageLayout",
-    Parent = DropdownFolder
-  })
-
   local Tabs = {}
   local CountTab = 0
   local CountDropdown = 0
@@ -1308,6 +1194,8 @@ function WisHub_Library:CreateWindow(Config)
   local TabKeys = {}
   local TabOrder = {}
   local ActiveCompactDropdownClose = nil
+  local ActiveCompactDropdownPopup = nil
+  local ActiveCompactDropdownField = nil
 
   local function NormalizeTabName(TabName)
     local Text = tostring(TabName or "")
@@ -1336,22 +1224,34 @@ function WisHub_Library:CreateWindow(Config)
     if ActiveCompactDropdownClose then
       ActiveCompactDropdownClose()
     end
-
-    if MoreBlur.Visible then
-      MoreBlur.Visible = false
-      MoreBlur.BackgroundTransparency = 1
-      DropdownSelect.Position = UDim2.new(1, 172, 0.5, 0)
-    end
-
-    for _, DropdownPage in pairs(DropdownFolder:GetChildren()) do
-      if DropdownPage:IsA("ScrollingFrame") then
-        local DropSearch = DropdownPage:FindFirstChild("SearchBar")
-        if DropSearch and DropSearch:IsA("TextBox") and DropSearch.Text ~= "" then
-          DropSearch.Text = ""
-        end
-      end
-    end
   end
+
+  local function IsInputInsideObject(Input, Object)
+    if not Object or not Object.Parent then return false end
+
+    local Position = Input.Position
+    local X = Position.X
+    local Y = Position.Y
+    local AbsolutePosition = Object.AbsolutePosition
+    local AbsoluteSize = Object.AbsoluteSize
+
+    return X >= AbsolutePosition.X
+      and X <= AbsolutePosition.X + AbsoluteSize.X
+      and Y >= AbsolutePosition.Y
+      and Y <= AbsolutePosition.Y + AbsoluteSize.Y
+  end
+
+  UserInputService.InputBegan:Connect(function(Input)
+    if not ActiveCompactDropdownClose then return end
+    if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
+    if IsInputInsideObject(Input, ActiveCompactDropdownPopup) or IsInputInsideObject(Input, ActiveCompactDropdownField) then return end
+
+    task.defer(function()
+      if ActiveCompactDropdownClose then
+        ActiveCompactDropdownClose()
+      end
+    end)
+  end)
 
   local function ApplyTabVisual(TabState, IsActive)
     local Tween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -1753,6 +1653,7 @@ function WisHub_Library:CreateWindow(Config)
       end
     
       local function ToggleSection()
+        CloseFloatingState()
         CircleClick(SectionButton, Player:GetMouse().X, Player:GetMouse().Y)
         
         if OpenSection then
@@ -1844,7 +1745,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local function UpdateParagraphSize()
           ParagraphContent.TextWrapped = false
-          local lineCount = math.ceil(ParagraphContent.TextBounds.X / ParagraphContent.AbsoluteSize.X)
+          local lineCount = math.ceil(ParagraphContent.TextBounds.X / math.max(1, ParagraphContent.AbsoluteSize.X))
 
           ParagraphContent.Size = UDim2.new(1, -16, 0, 12 + (12 * lineCount))
           Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 30)
@@ -1976,8 +1877,9 @@ function WisHub_Library:CreateWindow(Config)
 
         local ButtonStroke = Custom:Create("UIStroke", {
           Color = Custom.Stroke,
-          Thickness = 1,
-          Transparency = 0.78
+          ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+          Thickness = 0.8,
+          Transparency = 0.9
         }, Button)
 
         Custom:Create("UIGradient", {
@@ -2018,12 +1920,12 @@ function WisHub_Library:CreateWindow(Config)
 
         ButtonButton.MouseEnter:Connect(function()
           TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.45, Color = Custom.ColorRGB}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.68, Color = Custom.ColorRGB}):Play()
         end)
 
         ButtonButton.MouseLeave:Connect(function()
           TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.78, Color = Custom.Stroke}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.9, Color = Custom.Stroke}):Play()
         end)
 
         ButtonButton.Activated:Connect(function()
@@ -2111,7 +2013,7 @@ function WisHub_Library:CreateWindow(Config)
 				
         local function UpdateToggleSize()
           ToggleContent.TextWrapped = false
-          local Ratio = ToggleContent.TextBounds.X / ToggleContent.AbsoluteSize.X
+          local Ratio = ToggleContent.TextBounds.X / math.max(1, ToggleContent.AbsoluteSize.X)
 
           ToggleContent.Size = UDim2.new(1, -100, 0, 12 + (12 * math.ceil(Ratio)))
           Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 30)
@@ -2272,7 +2174,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local function UpdateSliderSize()
           SliderContent.TextWrapped = false
-          SliderContent.Size = UDim2.new(1, -180, 0, 12 + (12 * math.floor(SliderContent.TextBounds.X / SliderContent.AbsoluteSize.X)))
+          SliderContent.Size = UDim2.new(1, -180, 0, 12 + (12 * math.floor(SliderContent.TextBounds.X / math.max(1, SliderContent.AbsoluteSize.X))))
           Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 30)
           SliderContent.TextWrapped = true
         end
@@ -2541,7 +2443,7 @@ function WisHub_Library:CreateWindow(Config)
         Custom:Create("UIStroke", {
           Color = Custom.ColorRGB,
           Thickness = 1,
-          Transparency = 0.55
+          Transparency = 0.75
         }, InputFrame)
 
         local InputTextBox = Custom:Create("TextBox", {
@@ -2591,385 +2493,6 @@ function WisHub_Library:CreateWindow(Config)
 
         ItemCount += 1
 				return Funcs_Input
-      end
-
-      function Item:AddDropdown(Config)
-        local Title = Config[1] or Config.Title or ""
-        local Content = Config[2] or Config.Content or ""
-        local Multi = Config[3] or Config.Multi or false
-        local Options = Config[4] or Config.Options or {}
-        local Default = Config[5] or Config.Default or {}
-        local Callback = Config[6] or Config.Callback or function() end
-
-        local Funcs_Dropdown = {Value = Default, Options = Options}
-
-        local Dropdown = Custom:Create("Frame", {
-          BackgroundColor3 = Custom.Surface,
-          BackgroundTransparency = 0.14,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          LayoutOrder = ItemCount,
-          Size = UDim2.new(1, 0, 0, 35),
-          Name = "Dropdown"
-        }, SectionAdd)
-
-        local DropdownButton = Custom:Create("TextButton", {
-          Font = Custom.Font,
-          Text = "",
-          TextColor3 = Color3.fromRGB(0, 0, 0),
-          TextSize = 14,
-          BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Size = UDim2.new(1, 0, 1, 0),
-          Name = "ToggleButton"
-        }, Dropdown)
-
-        Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 4)
-        }, Dropdown)
-
-        local DropdownTitle = Custom:Create("TextLabel", {
-          Font = Custom.Font,
-          Text = Title,
-          TextColor3 = Color3.fromRGB(230, 230, 230),
-          TextSize = 13,
-          TextXAlignment = Enum.TextXAlignment.Left,
-          TextYAlignment = Enum.TextYAlignment.Top,
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 7),
-          Size = UDim2.new(1, -180, 0, 13),
-          Name = "DropdownTitle",
-          Parent = Dropdown
-        })
-
-        local DropdownContent = Custom:Create("TextLabel", {
-          Font = Custom.FontBody,
-          Text = Content,
-          TextColor3 = Color3.fromRGB(255, 255, 255),
-          TextSize = 12,
-          TextTransparency = 0.6,
-          TextWrapped = true,
-          TextXAlignment = Enum.TextXAlignment.Left,
-          TextYAlignment = Enum.TextYAlignment.Top,
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 21),
-          Size = UDim2.new(1, -180, 0, 12),
-          Name = "DropdownContent",
-          Parent = Dropdown
-        })
-        
-				DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
-				DropdownContent.TextWrapped = true
-				Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
-        
-        DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          DropdownContent.TextWrapped = false
-            
-					DropdownContent.Size = UDim2.new(1, -180, 0, 12 + (12 * (DropdownContent.TextBounds.X // DropdownContent.AbsoluteSize.X)))
-					Dropdown.Size = UDim2.new(1, 0, 0, DropdownContent.AbsoluteSize.Y + 30)
-            
-          DropdownContent.TextWrapped = true
-
-          UpdateSizeSection()
-        end)
-
-        local SelectOptionsFrame = Custom:Create("Frame", {
-          AnchorPoint = Vector2.new(1, 0.5),
-          BackgroundColor3 = Custom.Surface3,
-          BackgroundTransparency = 0.08,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Position = UDim2.new(1, -7, 0.5, 0),
-          Size = UDim2.new(0, 148, 0, 30),
-          Name = "SelectOptionsFrame",
-          LayoutOrder = CountDropdown
-        }, Dropdown)
-
-        Custom:Create("UICorner", {
-          CornerRadius = UDim.new(0, 4)
-        }, SelectOptionsFrame)
-
-        Custom:Create("UIStroke", {
-          Color = Custom.Stroke,
-          Thickness = 1,
-          Transparency = 0.7
-        }, SelectOptionsFrame)
-
-        DropdownButton.Activated:Connect(function()
-          if not MoreBlur.Visible then
-            MoreBlur.Visible = true
-              
-            local tweenInfo = TweenInfo.new(0.1)
-
-            DropPageLayout:JumpToIndex(SelectOptionsFrame.LayoutOrder)
-                            
-            local BlurTween = TweenService:Create(MoreBlur, tweenInfo, {BackgroundTransparency = 0.55})
-            local DropdownTween = TweenService:Create(DropdownSelect, tweenInfo, {Position = UDim2.new(1, -11, 0.5, 0)})
-              
-            BlurTween:Play()
-            DropdownTween:Play()
-          end
-        end)
-
-        local OptionSelecting = Custom:Create("TextLabel", {
-          Font = Custom.Font,
-          Text = "",
-          TextColor3 = Color3.fromRGB(255, 255, 255),
-          TextSize = 12,
-          TextTransparency = 0.6,
-          TextWrapped = true,
-          TextXAlignment = Enum.TextXAlignment.Left,
-          AnchorPoint = Vector2.new(0, 0.5),
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Position = UDim2.new(0, 5, 0.5, 0),
-          Size = UDim2.new(1, -30, 1, -8),
-          Name = "OptionSelecting",
-        }, SelectOptionsFrame)
-
-        local OptionImg = Custom:Create("ImageLabel", {
-          Image = "rbxassetid://90200523188815",
-          ImageColor3 = Color3.fromRGB(231, 231, 231),
-          AnchorPoint = Vector2.new(1, 0.5),
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Position = UDim2.new(1, 0, 0.5, 0),
-          Size = UDim2.new(0, 25, 0, 25),
-          Name = "OptionImg",
-        }, SelectOptionsFrame)
-
-        local ScrollSelect = Custom:Create("ScrollingFrame", {
-          CanvasSize = UDim2.new(0, 0, 0, 0),
-          ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0),
-          ScrollBarThickness = 0,
-          Active = true,
-          LayoutOrder = CountDropdown,
-          BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.999,
-          BorderColor3 = Color3.fromRGB(0, 0, 0),
-          BorderSizePixel = 0,
-          Size = UDim2.new(1, 0, 1, 0),
-          Name = "ScrollSelect",
-        }, DropdownFolder)
-
-        Custom:Create("UIListLayout", {
-          Padding = UDim.new(0, 3),
-          SortOrder = Enum.SortOrder.LayoutOrder,
-        }, ScrollSelect)
-
-        local SearchBar = Custom:Create("TextBox", {
-          Font = Custom.Font,
-          PlaceholderText = "Search",
-          PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
-          Text = "",
-          TextColor3 = Color3.fromRGB(255, 255, 255),
-          TextSize = 12,
-          BackgroundColor3 = Custom.Surface3,
-          BackgroundTransparency = 0.12,
-          BorderColor3 = Custom.ColorRGB,
-          BorderSizePixel = 1,
-          Size = UDim2.new(1, 0, 0, 20),
-          Name = "SearchBar"
-        }, ScrollSelect)
-
-        SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
-          local SearchText = string.lower(SearchBar.Text)
-
-          for _, v in pairs(ScrollSelect:GetChildren()) do
-            if v:IsA("Frame") and v.Name == "Option" and v.Name ~= "SearchBar" then
-              local OptionText = v:FindFirstChild("OptionText")
-              if OptionText then
-                v.Visible = string.find(string.lower(OptionText.Text), SearchText) ~= nil
-              end
-            end
-          end
-        end)
-
-        local DropCount = 0
-
-        function Funcs_Dropdown:Clear()
-          for _, DropFrame in pairs(ScrollSelect:GetChildren()) do
-            if DropFrame.Name == "Option" then
-              Funcs_Dropdown.Value = {}
-              Funcs_Dropdown.Options = {}
-              OptionSelecting.Text = "Select Options"
-              DropFrame:Destroy()
-            end
-          end
-        end
-        
-        function Funcs_Dropdown:Set(Value)
-          Funcs_Dropdown.Value = Value or Funcs_Dropdown.Value
-
-          for _, Drop in pairs(ScrollSelect:GetChildren()) do
-            if Drop.Name ~= "UIListLayout" and Drop.Name ~= "SearchBar" then
-              local isTextFound = table.find(Funcs_Dropdown.Value, Drop.OptionText.Text)
-              local tweenInfoInOut = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
-
-              local Size = isTextFound and UDim2.new(0, 1, 0, 12) or UDim2.new(0, 0, 0, 0)
-              local BackgroundTransparency = isTextFound and 0.14 or 0.999
-              local Transparency = isTextFound and 0 or 0.999
-          
-              TweenService:Create(Drop.ChooseFrame, tweenInfoInOut, {Size = Size}):Play()
-              TweenService:Create(Drop.ChooseFrame.UIStroke, tweenInfoInOut, {Transparency = Transparency}):Play()
-              TweenService:Create(Drop, tweenInfoInOut, {BackgroundTransparency = BackgroundTransparency}):Play()
-            end
-          end
-        
-          local DropdownValueTable = table.concat(Funcs_Dropdown.Value, ", ")
-          OptionSelecting.Text = DropdownValueTable ~= "" and DropdownValueTable or "Select Options"
-          Callback(Funcs_Dropdown.Value)
-        end
-
-        function Funcs_Dropdown:AddOption(OptionName)
-          OptionName = OptionName or "Option"
-  
-          local Option = Custom:Create("Frame", {
-            BackgroundColor3 = Custom.Surface3,
-            BackgroundTransparency = 0.999,
-            BorderColor3 = Color3.fromRGB(0, 0, 0),
-            BorderSizePixel = 0,
-            LayoutOrder = DropCount,
-            Size = UDim2.new(1, 0, 0, 30),
-            Name = "Option"
-          }, ScrollSelect)
-  
-          Custom:Create("UICorner", {
-            CornerRadius = UDim.new(0, 3)
-          }, Option)
-  
-          local OptionButton = Custom:Create("TextButton", {
-            Font = Custom.Font,
-            Text = "",
-            TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextSize = 13,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.999,
-            BorderColor3 = Color3.fromRGB(0, 0, 0),
-            BorderSizePixel = 0,
-            Size = UDim2.new(1, 0, 1, 0),
-            Name = "OptionButton"
-          }, Option)
-  
-          Custom:Create("TextLabel", {
-            Font = Custom.Font,
-            Text = OptionName,
-            TextSize = 13,
-            TextColor3 = Color3.fromRGB(230, 230, 230),
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Top,
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.999,
-            BorderColor3 = Color3.fromRGB(0, 0, 0),
-            BorderSizePixel = 0,
-            Position = UDim2.new(0, 8, 0, 8),
-            Size = UDim2.new(1, -100, 0, 13),
-            Name = "OptionText"
-          }, Option)
-  
-          local ChooseFrame = Custom:Create("Frame", {
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundColor3 = Custom.ColorRGB,
-            BorderColor3 = Color3.fromRGB(0, 0, 0),
-            BorderSizePixel = 0,
-            Position = UDim2.new(0, 2, 0.5, 0),
-            Size = UDim2.new(0, 0, 0, 0),
-            Name = "ChooseFrame"
-          }, Option)
-  
-          Custom:Create("UIStroke", {
-            Color = Custom.ColorRGB,
-            Thickness = 1.6,
-            Transparency = 0.999
-          }, ChooseFrame)
-  
-          Custom:Create("UICorner", {}, ChooseFrame)
-  
-          OptionButton.Activated:Connect(function()
-
-            CircleClick(OptionButton, Player:GetMouse().X, Player:GetMouse().Y)
-        
-            local isOptionSelected = Option.BackgroundTransparency > 0.95
-
-            if Multi then
-              if isOptionSelected then
-                if not table.find(Funcs_Dropdown.Value, OptionName) then
-                  table.insert(Funcs_Dropdown.Value, OptionName)
-                end
-              else
-                for i, value in ipairs(Funcs_Dropdown.Value) do
-                  if value == OptionName then
-                    table.remove(Funcs_Dropdown.Value, i)
-                    break
-                  end
-                end
-              end
-            else
-              Funcs_Dropdown.Value = {OptionName}
-            end
-
-            Funcs_Dropdown:Set(Funcs_Dropdown.Value)
-          end)
-        
-          local function UpdateCanvasSize()
-            local OffsetY = 0
-
-            for _, child in ipairs(ScrollSelect:GetChildren()) do
-              if child.Name ~= "UIListLayout" and child.Name ~= "SearchBar" then
-                OffsetY = OffsetY + 5 + child.Size.Y.Offset
-              end
-            end
-
-            ScrollSelect.CanvasSize = UDim2.new(0, 0, 0, OffsetY)
-          end
-        
-          UpdateCanvasSize()
-
-          DropCount += 1
-        end
-
-        function Funcs_Dropdown:Refresh(RefreshList, Selecting)
-          RefreshList = RefreshList or {}
-          Selecting = Selecting or {}
-          
-          Funcs_Dropdown:Clear()
-          
-          for _, Drop in ipairs(RefreshList) do
-            Funcs_Dropdown:AddOption(Drop)
-          end
-      
-          Funcs_Dropdown.Options = RefreshList
-          Funcs_Dropdown:Set(Selecting)
-        end
-      
-        Funcs_Dropdown:Refresh(Funcs_Dropdown.Options, Funcs_Dropdown.Value)
-
-        RegisterSearchEntry({
-          Title = Title,
-          Type = "Dropdown",
-          Tab = _Name,
-          Section = SectionState.Title,
-          Instance = Dropdown,
-          Scroll = SectionState.Scroll,
-          OpenSection = SectionState.Open
-        })
-      
-        ItemCount += 1
-        CountDropdown += 1
-        return Funcs_Dropdown
       end
 
       -- Compact dropdown override; keeps the legacy API while avoiding the old side overlay.
@@ -3092,7 +2615,7 @@ function WisHub_Library:CreateWindow(Config)
         Custom:Create("UIStroke", {
           Color = Custom.Stroke,
           Thickness = 1,
-          Transparency = 0.7
+          Transparency = 0.82
         }, SelectOptionsFrame)
 
         local OptionSelecting = Custom:Create("TextLabel", {
@@ -3355,6 +2878,8 @@ function WisHub_Library:CreateWindow(Config)
           IsOpen = false
           if ActiveCompactDropdownClose == CloseDropdown then
             ActiveCompactDropdownClose = nil
+            ActiveCompactDropdownPopup = nil
+            ActiveCompactDropdownField = nil
           end
 
           if Popup then
@@ -3394,6 +2919,7 @@ function WisHub_Library:CreateWindow(Config)
 
           IsOpen = true
           ActiveCompactDropdownClose = CloseDropdown
+          ActiveCompactDropdownField = SelectOptionsFrame
 
           Popup = Custom:Create("Frame", {
             AnchorPoint = Vector2.new(0, 0),
@@ -3408,6 +2934,8 @@ function WisHub_Library:CreateWindow(Config)
             Name = "DropdownPopup"
           }, LayersReal)
 
+          ActiveCompactDropdownPopup = Popup
+
           Custom:Create("UICorner", {
             CornerRadius = UDim.new(0, 4)
           }, Popup)
@@ -3415,7 +2943,7 @@ function WisHub_Library:CreateWindow(Config)
           Custom:Create("UIStroke", {
             Color = Custom.ColorRGB,
             Thickness = 1,
-            Transparency = 0.45
+            Transparency = 0.72
           }, Popup)
 
           PopupSearch = Custom:Create("TextBox", {
