@@ -429,7 +429,7 @@ function WisHub_Library:CreateWindow(Config)
   local Title = Config[1] or Config.Title or ""
   local Description = Config[2] or Config.Description or ""
   local TabWidth = Config[3] or Config["Tab Width"] or 120
-  local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(560, 330)
+  local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(580, 380)
   local DiscordInvite = Config.Discord or Config[5] or "discord.gg/wishubx"
   local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
   local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105006444774299"
@@ -1735,28 +1735,31 @@ function WisHub_Library:CreateWindow(Config)
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
           TextTransparency = 0.6,
+          TextWrapped = true,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundTransparency = 0.999,
           BorderSizePixel = 0,
           Position = UDim2.new(0, 10, 0, 21),
+          Size = UDim2.new(1, -20, 0, 12),
           Name = "ParagraphContent",
         }, Paragraph)
 
         local function UpdateParagraphSize()
-          ParagraphContent.TextWrapped = false
-          local lineCount = math.ceil(ParagraphContent.TextBounds.X / math.max(1, ParagraphContent.AbsoluteSize.X))
+          local ContentWidth = math.max(1, Paragraph.AbsoluteSize.X - 20)
+          local TextBounds = TextService:GetTextSize(ParagraphContent.Text, 12, Custom.FontBody, Vector2.new(ContentWidth, 10000))
+          local ContentHeight = ParagraphContent.Text == "" and 0 or math.max(12, math.ceil(TextBounds.Y))
 
-          ParagraphContent.Size = UDim2.new(1, -16, 0, 12 + (12 * lineCount))
-          Paragraph.Size = UDim2.new(1, 0, 0, ParagraphContent.AbsoluteSize.Y + 30)
-          ParagraphContent.TextWrapped = true
+          ParagraphContent.Size = UDim2.new(1, -20, 0, ContentHeight)
+          Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, ContentHeight + 32))
 
           UpdateSizeSection()
         end
 
-        UpdateParagraphSize()
+        task.defer(UpdateParagraphSize)
 
         ParagraphContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateParagraphSize)
+        Paragraph:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateParagraphSize)
 
         function SettingFuncs:Set(Config)
           local Title = Config[1] or Config.Title or ""
@@ -1866,9 +1869,10 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundColor3 = Custom.Surface2,
           BackgroundTransparency = 0.16,
           BorderSizePixel = 0,
+          ClipsDescendants = true,
           LayoutOrder = ItemCount,
-          Position = UDim2.new(0, 3, 0, 0),
-          Size = UDim2.new(1, -6, 0, 32)
+          Position = UDim2.new(0, 5, 0, 0),
+          Size = UDim2.new(1, -10, 0, 32)
         }, SectionAdd)
 
         Custom:Create("UICorner", {
@@ -1878,8 +1882,8 @@ function WisHub_Library:CreateWindow(Config)
         local ButtonStroke = Custom:Create("UIStroke", {
           Color = Custom.Stroke,
           ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-          Thickness = 0.8,
-          Transparency = 0.9
+          Thickness = 0,
+          Transparency = 1
         }, Button)
 
         Custom:Create("UIGradient", {
@@ -1920,12 +1924,12 @@ function WisHub_Library:CreateWindow(Config)
 
         ButtonButton.MouseEnter:Connect(function()
           TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.68, Color = Custom.ColorRGB}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.ColorRGB}):Play()
         end)
 
         ButtonButton.MouseLeave:Connect(function()
           TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.16}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0.9, Color = Custom.Stroke}):Play()
+          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.Stroke}):Play()
         end)
 
         ButtonButton.Activated:Connect(function()
@@ -2095,6 +2099,7 @@ function WisHub_Library:CreateWindow(Config)
         end)
       
         function Funcs_Toggle:Set(Value)
+          Funcs_Toggle.Value = Value
           Callback(Value)
           ToggleAnimation(Value)
         end
@@ -3069,6 +3074,7 @@ function WisHub_Library:CreateWindow(Config)
 
         local selectedConfig = tostring(Config.Default or Config.Selected or "")
         local currentName = selectedConfig
+        local autoLoadEnabled = Config.AutoLoadDefault == true or Config.AutoLoadEnabled == true
         local NameInput, ConfigList
 
         local function FirstChoice(Value)
@@ -3152,28 +3158,14 @@ function WisHub_Library:CreateWindow(Config)
           end
         })
 
-        local function DoAutoLoad()
-          local Name = selectedConfig ~= "" and selectedConfig or ResolveName()
-          if Name == "" then return false end
-
-          local Handler = Config.OnAutoLoad or Config.AutoLoad or Config.OnLoad or Config.Load
-          local Result = Handler and Handler(Name) or Name
-
-          if Result ~= false then
-            SyncSelected(type(Result) == "string" and Result or Name)
-          end
-
-          return Result
-        end
-
-        local function DoSaveAsAutoLoad()
+        local function DoSave()
           local Name = ResolveName()
           if Name == "" then
             Name = selectedConfig
           end
           if Name == "" then return false end
 
-          local Handler = Config.OnSaveAsAutoLoad or Config.SaveAsAutoLoad or Config.SaveAutoLoad or Config.OnSave or Config.Save
+          local Handler = Config.OnSave or Config.Save or Config.OnSaveAsAutoLoad or Config.SaveAsAutoLoad or Config.SaveAutoLoad
           local Result
 
           if Handler then
@@ -3192,16 +3184,38 @@ function WisHub_Library:CreateWindow(Config)
           return Result
         end
 
-        Item:AddButton({
+        local AutoLoadReady = false
+        local AutoLoadToggle = Item:AddToggle({
           Title = Config.AutoLoadText or "Auto Load",
-          Content = Config.AutoLoadContent or "",
-          Callback = DoAutoLoad
+          Content = Config.AutoLoadContent or "Load config ini otomatis",
+          Default = autoLoadEnabled,
+          Callback = function(Enabled)
+            autoLoadEnabled = Enabled == true
+            if not AutoLoadReady then return end
+
+            local Name = selectedConfig ~= "" and selectedConfig or ResolveName()
+
+            if autoLoadEnabled and Name == "" then
+              autoLoadEnabled = false
+              return false
+            end
+
+            local Handler = Config.OnAutoLoadToggle or Config.SetAutoLoad or Config.OnAutoLoad or Config.AutoLoad
+            local Result = Handler and Handler(Name, autoLoadEnabled) or autoLoadEnabled
+
+            if Result ~= false and Name ~= "" then
+              SyncSelected(type(Result) == "string" and Result or Name)
+            end
+
+            return Result
+          end
         })
+        AutoLoadReady = true
 
         Item:AddButton({
-          Title = Config.SaveAutoLoadText or "Save as Auto Load",
-          Content = Config.SaveAutoLoadContent or "",
-          Callback = DoSaveAsAutoLoad
+          Title = Config.SaveText or "Save",
+          Content = Config.SaveContent or "",
+          Callback = DoSave
         })
 
         local ConfigPanel = {}
@@ -3218,12 +3232,22 @@ function WisHub_Library:CreateWindow(Config)
           return selectedConfig
         end
 
+        function ConfigPanel:GetAutoLoad()
+          return autoLoadEnabled
+        end
+
         function ConfigPanel:SetName(Name)
           SyncSelected(Name)
         end
 
         function ConfigPanel:SetSelected(Name)
           SyncSelected(Name)
+        end
+
+        function ConfigPanel:SetAutoLoad(Enabled)
+          if AutoLoadToggle and AutoLoadToggle.Set then
+            AutoLoadToggle:Set(Enabled == true)
+          end
         end
 
         return ConfigPanel
