@@ -1871,8 +1871,8 @@ function WisHub_Library:CreateWindow(Config)
           BorderSizePixel = 0,
           ClipsDescendants = true,
           LayoutOrder = ItemCount,
-          Position = UDim2.new(0, 5, 0, 0),
-          Size = UDim2.new(1, -10, 0, 32)
+          Position = UDim2.new(0, 0, 0, 0),
+          Size = UDim2.new(1, 0, 0, 32)
         }, SectionAdd)
 
         Custom:Create("UICorner", {
