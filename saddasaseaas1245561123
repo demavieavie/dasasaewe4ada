@@ -45,10 +45,106 @@ end
 
 Custom:EnabledAFK()
 
+local function TrySet(Object, Properties)
+  if not Object then return false end
+
+  local Ok = true
+  for Property, Value in pairs(Properties) do
+    local Success = pcall(function()
+      Object[Property] = Value
+    end)
+    Ok = Ok and Success
+  end
+
+  return Ok
+end
+
+local function SafeTween(Object, Info, Properties)
+  if not Object then return nil end
+
+  local Success, Tween = pcall(function()
+    return TweenService:Create(Object, Info, Properties)
+  end)
+
+  if Success and Tween then
+    local Played = pcall(function()
+      Tween:Play()
+    end)
+
+    if Played then
+      return Tween
+    end
+  end
+
+  TrySet(Object, Properties)
+  return nil
+end
+
+local function SafeChildren(Object)
+  local Success, Children = pcall(function()
+    return Object:GetChildren()
+  end)
+
+  return Success and Children or {}
+end
+
+local function EstimateWrappedHeight(Text, CharsPerLine, LineHeight, MinLines, MaxLines)
+  Text = tostring(Text or "")
+  if Text == "" then return 0 end
+
+  CharsPerLine = math.max(8, CharsPerLine or 56)
+  LineHeight = LineHeight or 13
+  MinLines = MinLines or 1
+  MaxLines = MaxLines or 4
+
+  local Lines = 0
+  for Segment in (Text .. "\n"):gmatch("(.-)\n") do
+    Lines += math.max(1, math.ceil(#Segment / CharsPerLine))
+  end
+
+  Lines = math.clamp(Lines, MinLines, MaxLines)
+  return Lines * LineHeight
+end
+
+local function CompactRowHeight(Content)
+  return tostring(Content or "") == "" and 35 or 44
+end
+
+local function GetGuiParent()
+  local GuiParent
+
+  if RunService:IsStudio() then
+    GuiParent = Player:FindFirstChildOfClass("PlayerGui") or Player:WaitForChild("PlayerGui", 5)
+  end
+
+  if not GuiParent and type(gethui) == "function" then
+    pcall(function()
+      GuiParent = gethui()
+    end)
+  end
+
+  if not GuiParent then
+    pcall(function()
+      local CoreGui = game:GetService("CoreGui")
+      if type(cloneref) == "function" then
+        GuiParent = cloneref(CoreGui)
+      else
+        GuiParent = CoreGui
+      end
+    end)
+  end
+
+  if not GuiParent then
+    GuiParent = Player:FindFirstChildOfClass("PlayerGui") or Player:WaitForChild("PlayerGui")
+  end
+
+  return GuiParent
+end
+
 local function OpenClose()
   local ScreenGui = Custom:Create("ScreenGui", {
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-  }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
+  }, GetGuiParent())
 
   local Close_ImageButton = Custom:Create("ImageButton", {
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -99,9 +195,10 @@ end
 local Open_Close = OpenClose()
 
 local function MakeDraggable(topbarobject, object)
-  local dragging, dragStart, startPos = false, nil, nil
+  local dragging, dragStart, startPos, dragInput = false, nil, nil, nil
 
   local function UpdatePos(input)
+    if not dragging or not dragStart or not startPos then return end
     local delta = input.Position - dragStart
     local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     object.Position = newPos
@@ -116,21 +213,37 @@ local function MakeDraggable(topbarobject, object)
       input.Changed:Connect(function()
         if input.UserInputState == Enum.UserInputState.End then
           dragging = false
+          dragInput = nil
         end
       end)
     end
   end)
 
   topbarobject.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+      dragInput = input
+    end
+  end)
+
+  UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
       UpdatePos(input)
+    end
+  end)
+
+  UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+      dragging = false
+      dragInput = nil
     end
   end)
 end
 
 function CircleClick(Button, X, Y)
 	task.spawn(function()
-		Button.ClipsDescendants = true
+		pcall(function()
+      Button.ClipsDescendants = true
+    end)
 
 		local Circle = Instance.new("ImageLabel")
 		Circle.Image = "rbxassetid://266543268"
@@ -144,15 +257,20 @@ function CircleClick(Button, X, Y)
 		Circle.Size = UDim2.new(0, 0, 0, 0)
 		Circle.Parent = Button
 
-		local Size = math.max(Button.AbsoluteSize.X, Button.AbsoluteSize.Y) * 1.2
+		local Size = 42
+    pcall(function()
+		  Size = math.max(Button.AbsoluteSize.X, Button.AbsoluteSize.Y) * 1.2
+    end)
 
-		TweenService:Create(Circle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		SafeTween(Circle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 			Size = UDim2.new(0, Size, 0, Size),
 			ImageTransparency = 1
-		}):Play()
+		})
 
 		task.delay(0.25, function()
-			Circle:Destroy()
+			pcall(function()
+        Circle:Destroy()
+      end)
 		end)
 	end)
 end
@@ -220,7 +338,7 @@ function WisHub_Library:SetNotification(Config)
 
   local NotificationGui = Custom:Create("ScreenGui", {
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-  }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
+  }, GetGuiParent())
 
   local NotificationLayout = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(1, 1),
@@ -239,16 +357,15 @@ function WisHub_Library:SetNotification(Config)
     Count = 0
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
     
-    for _, v in ipairs(NotificationLayout:GetChildren()) do
+    for _, v in ipairs(SafeChildren(NotificationLayout)) do
       local NewPOS = UDim2.new(0, 0, 1, -((v.Size.Y.Offset + 12) * Count))
-      local tween = TweenService:Create(v, tweenInfo, {Position = NewPOS})
-      tween:Play()
+      SafeTween(v, tweenInfo, {Position = NewPOS})
       Count = Count + 1
     end
   end)
 
   local _Count = 0
-  for _, v in ipairs(NotificationLayout:GetChildren()) do
+  for _, v in ipairs(SafeChildren(NotificationLayout)) do
     _Count = -(v.Position.Y.Offset) + v.Size.Y.Offset + 12
   end
 
@@ -348,7 +465,7 @@ function WisHub_Library:SetNotification(Config)
     BorderColor3 = Color3.fromRGB(0, 0, 0),
     BorderSizePixel = 0,
     Size = UDim2.new(1, 0, 1, 0),
-    Position = UDim2.new(0, TextLabel.TextBounds.X + 15, 0, 0),
+    Position = UDim2.new(0, math.clamp(#tostring(Title) * 8, 30, 155) + 15, 0, 0),
     Parent = Top
   })
 
@@ -391,13 +508,14 @@ function WisHub_Library:SetNotification(Config)
     Parent = NotificationFrameReal
   })
 
-  TextLabel2.Size = UDim2.new(1, -20, 0, 13 + (13 * (TextLabel2.TextBounds.X // math.max(1, TextLabel2.AbsoluteSize.X))))
+  local NotificationContentHeight = math.max(13, EstimateWrappedHeight(Content, 42, 13, 1, 5))
+  TextLabel2.Size = UDim2.new(1, -20, 0, NotificationContentHeight)
   TextLabel2.TextWrapped = true
 
-  if TextLabel2.AbsoluteSize.Y < 27 then
+  if NotificationContentHeight < 27 then
     NotificationFrame.Size = UDim2.new(1, 0, 0, 65)
   else
-    NotificationFrame.Size = UDim2.new(1, 0, 0, TextLabel2.AbsoluteSize.Y + 40)
+    NotificationFrame.Size = UDim2.new(1, 0, 0, NotificationContentHeight + 40)
   end
 
   local NotifFuncs = {}
@@ -407,10 +525,12 @@ function WisHub_Library:SetNotification(Config)
     if Waitted then return end
     Waitted = true
 
-    TweenService:Create(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 400, 0, 0)}):Play()
+    SafeTween(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 400, 0, 0)})
 
     task.delay(tonumber(Time) / 1.2, function()
-      NotificationFrame:Destroy()
+      pcall(function()
+        NotificationFrame:Destroy()
+      end)
     end)
   end
 
@@ -418,7 +538,7 @@ function WisHub_Library:SetNotification(Config)
 
   Close.Activated:Connect(CloseNotif)
 
-  TweenService:Create(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+  SafeTween(NotificationFrameReal, TweenInfo.new(tonumber(Time), Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Position = UDim2.new(0, 0, 0, 0)})
 
   task.delay(tonumber(Delay), CloseNotif)
 
@@ -440,7 +560,7 @@ function WisHub_Library:CreateWindow(Config)
 
   local WisHubGui = Custom:Create("ScreenGui", {
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-  }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
+  }, GetGuiParent())
 
   local DropShadowHolder = Custom:Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -606,7 +726,7 @@ function WisHub_Library:CreateWindow(Config)
     Name = "DiscordText"
   }, DiscordPill)
 
-  local DiscordTextWidth = TextService:GetTextSize(DiscordInvite, 12, Custom.Font, Vector2.new(220, 22)).X
+  local DiscordTextWidth = math.clamp(#tostring(DiscordInvite) * 7, 40, 170)
 
   if DiscordLogo == "" then
     DiscordIcon.Visible = false
@@ -1042,7 +1162,7 @@ function WisHub_Library:CreateWindow(Config)
   local function UpdateSize()
     local _Total = 0
 
-		for _, v in pairs(ScrollTab:GetChildren()) do
+		for _, v in pairs(SafeChildren(ScrollTab)) do
 			if v.Name ~= "UIListLayout" then
 				_Total = _Total + 3 + v.Size.Y.Offset
 			end
@@ -1166,13 +1286,13 @@ function WisHub_Library:CreateWindow(Config)
     ConfirmHolder.Visible = true
     ConfirmHolder.BackgroundTransparency = 1
     ConfirmBox.Size = UDim2.new(0, 232, 0, 110)
-    TweenService:Create(ConfirmHolder, TweenInfo.new(0.15), {BackgroundTransparency = 0.45}):Play()
-    TweenService:Create(ConfirmBox, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 250, 0, 120)}):Play()
+    SafeTween(ConfirmHolder, TweenInfo.new(0.15), {BackgroundTransparency = 0.45})
+    SafeTween(ConfirmBox, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 250, 0, 120)})
   end)
 
   CancelBtn.Activated:Connect(function()
     CircleClick(CancelBtn, Player:GetMouse().X, Player:GetMouse().Y)
-    TweenService:Create(ConfirmHolder, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+    SafeTween(ConfirmHolder, TweenInfo.new(0.15), {BackgroundTransparency = 1})
     task.wait(0.15)
     ConfirmHolder.Visible = false
   end)
@@ -1232,8 +1352,11 @@ function WisHub_Library:CreateWindow(Config)
     local Position = Input.Position
     local X = Position.X
     local Y = Position.Y
-    local AbsolutePosition = Object.AbsolutePosition
-    local AbsoluteSize = Object.AbsoluteSize
+    local Success, AbsolutePosition, AbsoluteSize = pcall(function()
+      return Object.AbsolutePosition, Object.AbsoluteSize
+    end)
+
+    if not Success then return false end
 
     return X >= AbsolutePosition.X
       and X <= AbsolutePosition.X + AbsoluteSize.X
@@ -1258,19 +1381,19 @@ function WisHub_Library:CreateWindow(Config)
     TabState.ChooseFrame.Visible = IsActive
     TabState.ChooseFrame.Size = IsActive and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
 
-    TweenService:Create(TabState.Tab, Tween, {
+    SafeTween(TabState.Tab, Tween, {
       BackgroundColor3 = IsActive and Color3.fromRGB(48, 24, 70) or Color3.fromRGB(255, 255, 255),
       BackgroundTransparency = IsActive and 0.12 or 0.999
-    }):Play()
+    })
 
-    TweenService:Create(TabState.NameLabel, Tween, {
+    SafeTween(TabState.NameLabel, Tween, {
       TextColor3 = IsActive and Color3.fromRGB(248, 244, 255) or Color3.fromRGB(205, 205, 214)
-    }):Play()
+    })
 
-    TweenService:Create(TabState.IconLabel, Tween, {
+    SafeTween(TabState.IconLabel, Tween, {
       ImageColor3 = IsActive and Custom.ColorRGB or Color3.fromRGB(150, 150, 160),
       ImageTransparency = TabState.Icon == "" and 1 or (IsActive and 0 or 0.28)
-    }):Play()
+    })
   end
 
   local function SwitchTab(TabName)
@@ -1314,10 +1437,10 @@ function WisHub_Library:CreateWindow(Config)
 
     task.delay(0.55, function()
       if InstanceFrame and InstanceFrame.Parent then
-        TweenService:Create(InstanceFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        SafeTween(InstanceFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
           BackgroundColor3 = OriginalColor,
           BackgroundTransparency = OriginalTransparency
-        }):Play()
+        })
       end
     end)
   end
@@ -1336,9 +1459,11 @@ function WisHub_Library:CreateWindow(Config)
 
     task.delay(0.12, function()
       if Entry.Scroll and Entry.Instance and Entry.Instance.Parent then
-        local TargetY = Entry.Instance.AbsolutePosition.Y - Entry.Scroll.AbsolutePosition.Y + Entry.Scroll.CanvasPosition.Y - 8
-        local MaxY = math.max(0, Entry.Scroll.CanvasSize.Y.Offset - Entry.Scroll.AbsoluteSize.Y)
-        Entry.Scroll.CanvasPosition = Vector2.new(0, math.clamp(TargetY, 0, MaxY))
+        pcall(function()
+          local TargetY = Entry.Instance.AbsolutePosition.Y - Entry.Scroll.AbsolutePosition.Y + Entry.Scroll.CanvasPosition.Y - 8
+          local MaxY = math.max(0, Entry.Scroll.CanvasSize.Y.Offset - Entry.Scroll.AbsoluteSize.Y)
+          Entry.Scroll.CanvasPosition = Vector2.new(0, math.clamp(TargetY, 0, MaxY))
+        end)
       end
 
       HighlightSearchInstance(Entry.Instance)
@@ -1369,6 +1494,7 @@ function WisHub_Library:CreateWindow(Config)
 			ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80),
 			ScrollBarThickness = 0,
 			Active = true,
+      ClipsDescendants = true,
       ScrollingEnabled = false,
       Visible = false,
 			LayoutOrder = CountTab,
@@ -1508,6 +1634,7 @@ function WisHub_Library:CreateWindow(Config)
         BackgroundTransparency = 0.12,
         BorderColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
+        ClipsDescendants = true,
         LayoutOrder = 1,
         Position = UDim2.new(0.5, 0, 0, 0),
         Size = UDim2.new(1, 1, 0, 30),
@@ -1537,6 +1664,7 @@ function WisHub_Library:CreateWindow(Config)
         BackgroundTransparency = 0.9990000128746033,
         BorderColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
+        ClipsDescendants = true,
         Position = UDim2.new(1, -5, 0.5, 0),
         Size = UDim2.new(0, 20, 0, 20),
         Name = "FeatureFrame"
@@ -1615,7 +1743,7 @@ function WisHub_Library:CreateWindow(Config)
       local function UpdateSizeScroll()
         local OffsetY = 0
   
-        for _, child in pairs(ScrolLayers:GetChildren()) do
+        for _, child in pairs(SafeChildren(ScrolLayers)) do
           if child.Name ~= "UIListLayout" then
             OffsetY = OffsetY + ItemGap + child.Size.Y.Offset
           end
@@ -1628,16 +1756,17 @@ function WisHub_Library:CreateWindow(Config)
         if OpenSection then
           local SectionSizeYWitdh = 38
   
-          for _, v in pairs(SectionAdd:GetChildren()) do
+          for _, v in pairs(SafeChildren(SectionAdd)) do
             if v.Name ~= "UIListLayout" and v.Name ~= "UICorner" then
               SectionSizeYWitdh = SectionSizeYWitdh + v.Size.Y.Offset + ItemGap
             end
           end
     
-          TweenService:Create(FeatureFrame, TweenInfo.new(0.1), {Rotation = 90}):Play()
-          TweenService:Create(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, SectionSizeYWitdh)}):Play()
-          TweenService:Create(SectionAdd, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, SectionSizeYWitdh - 38)}):Play()
-          TweenService:Create(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 2)}):Play()
+          TrySet(FeatureFrame, {Rotation = 0})
+          SafeTween(FeatureImg, TweenInfo.new(0.1), {Rotation = 0})
+          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, SectionSizeYWitdh)})
+          SafeTween(SectionAdd, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, SectionSizeYWitdh - 38)})
+          SafeTween(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 2)})
             
           task.wait(0.12)
           UpdateSizeScroll()
@@ -1657,9 +1786,10 @@ function WisHub_Library:CreateWindow(Config)
         CircleClick(SectionButton, Player:GetMouse().X, Player:GetMouse().Y)
         
         if OpenSection then
-          TweenService:Create(FeatureFrame, TweenInfo.new(0.1), {Rotation = 0}):Play()
-          TweenService:Create(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, 30)}):Play()
-          TweenService:Create(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(0, 0, 0, 2)}):Play()
+          TrySet(FeatureFrame, {Rotation = 0})
+          SafeTween(FeatureImg, TweenInfo.new(0.1), {Rotation = -90})
+          SafeTween(Section, TweenInfo.new(0.1), {Size = UDim2.new(1, 1, 0, 30)})
+          SafeTween(SectionDecideFrame, TweenInfo.new(0.1), {Size = UDim2.new(0, 0, 0, 2)})
     
           OpenSection = false
           task.wait(0.1)
@@ -1735,7 +1865,8 @@ function WisHub_Library:CreateWindow(Config)
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
           TextTransparency = 0.6,
-          TextWrapped = true,
+          TextTruncate = Enum.TextTruncate.AtEnd,
+          TextWrapped = false,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundTransparency = 0.999,
@@ -1746,9 +1877,7 @@ function WisHub_Library:CreateWindow(Config)
         }, Paragraph)
 
         local function UpdateParagraphSize()
-          local ContentWidth = math.max(1, Paragraph.AbsoluteSize.X - 20)
-          local TextBounds = TextService:GetTextSize(ParagraphContent.Text, 12, Custom.FontBody, Vector2.new(ContentWidth, 10000))
-          local ContentHeight = ParagraphContent.Text == "" and 0 or math.max(12, math.ceil(TextBounds.Y))
+          local ContentHeight = EstimateWrappedHeight(ParagraphContent.Text, 58, 13, 1, 4)
 
           ParagraphContent.Size = UDim2.new(1, -20, 0, ContentHeight)
           Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, ContentHeight + 32))
@@ -1756,10 +1885,7 @@ function WisHub_Library:CreateWindow(Config)
           UpdateSizeSection()
         end
 
-        task.defer(UpdateParagraphSize)
-
-        ParagraphContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateParagraphSize)
-        Paragraph:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateParagraphSize)
+        UpdateParagraphSize()
 
         function SettingFuncs:Set(Config)
           local Title = Config[1] or Config.Title or ""
@@ -1867,7 +1993,7 @@ function WisHub_Library:CreateWindow(Config)
         local Button = Custom:Create("Frame", {
           Name = "Button",
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-          BackgroundTransparency = 0.92,
+          BackgroundTransparency = 0.88,
           BorderSizePixel = 0,
           ClipsDescendants = true,
           LayoutOrder = ItemCount,
@@ -1918,22 +2044,22 @@ function WisHub_Library:CreateWindow(Config)
         }, Button)
 
         ButtonButton.MouseEnter:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.87}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.ColorRGB}):Play()
+          SafeTween(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.82})
+          SafeTween(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.ColorRGB})
         end)
 
         ButtonButton.MouseLeave:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.92}):Play()
-          TweenService:Create(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.Stroke}):Play()
+          SafeTween(Button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.88})
+          SafeTween(ButtonStroke, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1, Color = Custom.Stroke})
         end)
 
         ButtonButton.Activated:Connect(function()
-          TweenService:Create(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.8}):Play()
-          TweenService:Create(ButtonScale, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.985}):Play()
+          SafeTween(Button, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.74})
+          SafeTween(ButtonScale, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.985})
           task.delay(0.08, function()
             if Button and Button.Parent then
-              TweenService:Create(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.92}):Play()
-              TweenService:Create(ButtonScale, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+              SafeTween(Button, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.88})
+              SafeTween(ButtonScale, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1})
             end
           end)
 
@@ -1967,14 +2093,15 @@ function WisHub_Library:CreateWindow(Config)
         local Callback = Config[4] or Config.Callback or function() end
 
 				local Funcs_Toggle = {Value = Default}
-
+        local RowHeight = CompactRowHeight(Content)
+        
         local Toggle = Custom:Create("Frame", {
 					Name = "Toggle",
 					BackgroundColor3 = Custom.Surface,
 					BackgroundTransparency = 0.14,
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
-					Size = UDim2.new(1, 0, 0, 35)
+					Size = UDim2.new(1, 0, 0, RowHeight)
 				}, SectionAdd)
 
         Custom:Create("UICorner", {
@@ -1987,12 +2114,13 @@ function WisHub_Library:CreateWindow(Config)
 					Text = Title,
 					TextSize = 13,
 					TextColor3 = Color3.fromRGB(231, 231, 231),
+          TextTruncate = Enum.TextTruncate.AtEnd,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 7),
+					Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7),
 					Size = UDim2.new(1, -100, 0, 13)
 				}, Toggle)
 
@@ -2003,30 +2131,27 @@ function WisHub_Library:CreateWindow(Config)
 					TextSize = 12,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					TextTransparency = 0.6,
+          TextTruncate = Enum.TextTruncate.AtEnd,
+          TextWrapped = false,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.999,
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 21),
-					Size = UDim2.new(1, -100, 0, 12)
+					Size = UDim2.new(1, -100, 0, 12),
+          Visible = Content ~= ""
 				}, Toggle)
 				
         local function UpdateToggleSize()
-          ToggleContent.TextWrapped = false
-          local Ratio = ToggleContent.TextBounds.X / math.max(1, ToggleContent.AbsoluteSize.X)
-
-          ToggleContent.Size = UDim2.new(1, -100, 0, 12 + (12 * math.ceil(Ratio)))
-          Toggle.Size = UDim2.new(1, 0, 0, ToggleContent.AbsoluteSize.Y + 30)
-          ToggleContent.TextWrapped = true
+          RowHeight = CompactRowHeight(Content)
+          Toggle.Size = UDim2.new(1, 0, 0, RowHeight)
+          ToggleTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
+          ToggleContent.Visible = Content ~= ""
+          ToggleContent.Size = UDim2.new(1, -100, 0, 12)
         end
       
         UpdateToggleSize()
-      
-        ToggleContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          UpdateToggleSize()
-          UpdateSizeSection()
-        end)
 
         local ToggleButton = Custom:Create("TextButton", {
           Name = "ToggleButton",
@@ -2083,10 +2208,10 @@ function WisHub_Library:CreateWindow(Config)
 
           local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
       
-          TweenService:Create(ToggleTitle, tweenInfo, {TextColor3 = TitleColor}):Play()
-          TweenService:Create(ToggleCircle, tweenInfo, {Position = CirclePosition}):Play()
-          TweenService:Create(UIStroke8, tweenInfo, {Color = StrokeColor, Transparency = StrokeTransparency}):Play()
-          TweenService:Create(FeatureFrame2, tweenInfo, {BackgroundColor3 = FrameColor, BackgroundTransparency = FrameTransparency}):Play()
+          SafeTween(ToggleTitle, tweenInfo, {TextColor3 = TitleColor})
+          SafeTween(ToggleCircle, tweenInfo, {Position = CirclePosition})
+          SafeTween(UIStroke8, tweenInfo, {Color = StrokeColor, Transparency = StrokeTransparency})
+          SafeTween(FeatureFrame2, tweenInfo, {BackgroundColor3 = FrameColor, BackgroundTransparency = FrameTransparency})
         end
       
         ToggleButton.Activated:Connect(function()
@@ -2127,14 +2252,15 @@ function WisHub_Library:CreateWindow(Config)
         local Callback = Config[7] or Config.Callback or function() end
 
 				local Funcs_Slider = {Value = Default}
+        local RowHeight = CompactRowHeight(Content)
         
-        local Slider = Custom:Create("Frame", {
+				local Slider = Custom:Create("Frame", {
 					BackgroundColor3 = Custom.Surface,
 					BackgroundTransparency = 0.14,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
 					LayoutOrder = ItemCount,
-					Size = UDim2.new(1, 0, 0, 35),
+					Size = UDim2.new(1, 0, 0, RowHeight),
 					Name = "Slider",
 				}, SectionAdd)
 
@@ -2142,18 +2268,19 @@ function WisHub_Library:CreateWindow(Config)
           CornerRadius = UDim.new(0, 4),
         }, Slider)
 
-        Custom:Create("TextLabel", {
+        local SliderTitle = Custom:Create("TextLabel", {
 					Font = Custom.Font,
 					Text = Title,
 					TextColor3 = Color3.fromRGB(230, 230, 230),
 					TextSize = 13,
+          TextTruncate = Enum.TextTruncate.AtEnd,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					BackgroundTransparency = 0.9990000128746033,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 10, 0, 7),
+					Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7),
 					Size = UDim2.new(1, -180, 0, 13),
 					Name = "SliderTitle",
 				}, Slider)
@@ -2164,6 +2291,8 @@ function WisHub_Library:CreateWindow(Config)
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					TextSize = 12,
 					TextTransparency = 0.6000000238418579,
+          TextTruncate = Enum.TextTruncate.AtEnd,
+          TextWrapped = false,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -2172,20 +2301,18 @@ function WisHub_Library:CreateWindow(Config)
 					BorderSizePixel = 0,
 					Position = UDim2.new(0, 10, 0, 21),
 					Size = UDim2.new(1, -180, 0, 12),
+          Visible = Content ~= "",
 					Name = "SliderContent",
 				}, Slider)
 
         local function UpdateSliderSize()
-          SliderContent.TextWrapped = false
-          SliderContent.Size = UDim2.new(1, -180, 0, 12 + (12 * math.floor(SliderContent.TextBounds.X / math.max(1, SliderContent.AbsoluteSize.X))))
-          Slider.Size = UDim2.new(1, 0, 0, SliderContent.AbsoluteSize.Y + 30)
-          SliderContent.TextWrapped = true
+          RowHeight = CompactRowHeight(Content)
+          Slider.Size = UDim2.new(1, 0, 0, RowHeight)
+          SliderTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
+          SliderContent.Visible = Content ~= ""
+          SliderContent.Size = UDim2.new(1, -180, 0, 12)
         end
 
-        SliderContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          UpdateSliderSize()
-          UpdateSizeSection()
-        end)
         UpdateSliderSize()
 
         local SliderInput = Custom:Create("Frame", {
@@ -2280,7 +2407,7 @@ function WisHub_Library:CreateWindow(Config)
           Funcs_Slider.Value = Value
           TextBox.Text = tostring(Value)
             
-          TweenService:Create(SliderDraggable, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) }):Play()
+          SafeTween(SliderDraggable, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) })
         end
         
         local _LastX = nil
@@ -2295,8 +2422,13 @@ function WisHub_Library:CreateWindow(Config)
                   local CurrPosX = MoveInput.Position.X
                   if CurrPosX ~= _LastX then
                     _LastX = CurrPosX
-                    local SizeScale = math.clamp((CurrPosX - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
-                    Funcs_Slider:Set(Min + ((Max - Min) * SizeScale))
+                    local Success, SizeScale = pcall(function()
+                      return math.clamp((CurrPosX - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
+                    end)
+
+                    if Success then
+                      Funcs_Slider:Set(Min + ((Max - Min) * SizeScale))
+                    end
                   end
                 end
               end)
@@ -2359,6 +2491,7 @@ function WisHub_Library:CreateWindow(Config)
         local Placeholder = Config.Placeholder or Config.PlaceholderText or "Input value"
         local Callback = Config[4] or Config.Callback or function() end
 				local Funcs_Input = {Value = Default}
+        local RowHeight = CompactRowHeight(Content)
 
         local Input = Custom:Create("Frame", {
           BackgroundColor3 = Custom.Surface,
@@ -2366,7 +2499,7 @@ function WisHub_Library:CreateWindow(Config)
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
           LayoutOrder = ItemCount,
-          Size = UDim2.new(1, 0, 0, 35),
+          Size = UDim2.new(1, 0, 0, RowHeight),
           Name = "Input",
         }, SectionAdd)
 
@@ -2379,13 +2512,14 @@ function WisHub_Library:CreateWindow(Config)
           Text = Title,
           TextColor3 = Color3.fromRGB(230, 230, 230),
           TextSize = 13,
+          TextTruncate = Enum.TextTruncate.AtEnd,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 7),
+          Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7),
           Size = UDim2.new(1, -180, 0, 13),
           Name = "InputTitle",
         }, Input)
@@ -2396,7 +2530,8 @@ function WisHub_Library:CreateWindow(Config)
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
           TextTransparency = 0.6,
-          TextWrapped = true,
+          TextTruncate = Enum.TextTruncate.AtEnd,
+          TextWrapped = false,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -2405,26 +2540,20 @@ function WisHub_Library:CreateWindow(Config)
           BorderSizePixel = 0,
           Position = UDim2.new(0, 10, 0, 21),
           Size = UDim2.new(1, -180, 0, 12),
+          Visible = Content ~= "",
           Name = "InputContent",
           Parent = Input
         })
 
         local function UpdateInputSize()
-          local Ratio = InputContent.TextBounds.X / math.max(1, InputContent.AbsoluteSize.X)
-          local Calculated = 12 + (12 * math.floor(Ratio))
-
-          InputContent.Size = UDim2.new(1, -180, 0, Calculated)
-          Input.Size = UDim2.new(1, 0, 0, InputContent.AbsoluteSize.Y + 30)
+          RowHeight = CompactRowHeight(Content)
+          Input.Size = UDim2.new(1, 0, 0, RowHeight)
+          InputTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
+          InputContent.Visible = Content ~= ""
+          InputContent.Size = UDim2.new(1, -180, 0, 12)
         end
       
         UpdateInputSize()
-      
-        InputContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          InputContent.TextWrapped = false
-          UpdateInputSize()
-          InputContent.TextWrapped = true
-          UpdateSizeSection()
-        end)
 
         local InputFrame = Custom:Create("Frame", {
           AnchorPoint = Vector2.new(1, 0.5),
@@ -2528,7 +2657,7 @@ function WisHub_Library:CreateWindow(Config)
           Options = Options
         }
 
-        local BaseHeight = 35
+        local BaseHeight = CompactRowHeight(Content)
         local PopupHeight = 0
         local IsOpen = false
         local Popup, PopupSearch, PopupScroll
@@ -2557,8 +2686,10 @@ function WisHub_Library:CreateWindow(Config)
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Size = UDim2.new(1, 0, 0, BaseHeight),
-          ZIndex = 2,
+          AnchorPoint = Vector2.new(1, 0.5),
+          Position = UDim2.new(1, -7, 0, BaseHeight / 2),
+          Size = UDim2.new(0, 148, 0, 30),
+          ZIndex = 7,
           Name = "ToggleButton"
         }, Dropdown)
 
@@ -2567,13 +2698,14 @@ function WisHub_Library:CreateWindow(Config)
           Text = Title,
           TextColor3 = Color3.fromRGB(230, 230, 230),
           TextSize = 13,
+          TextTruncate = Enum.TextTruncate.AtEnd,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
           BackgroundTransparency = 0.999,
           BorderColor3 = Color3.fromRGB(0, 0, 0),
           BorderSizePixel = 0,
-          Position = UDim2.new(0, 10, 0, 7),
+          Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7),
           Size = UDim2.new(1, -180, 0, 13),
           ZIndex = 3,
           Name = "DropdownTitle"
@@ -2585,7 +2717,8 @@ function WisHub_Library:CreateWindow(Config)
           TextColor3 = Color3.fromRGB(255, 255, 255),
           TextSize = 12,
           TextTransparency = 0.6,
-          TextWrapped = true,
+          TextTruncate = Enum.TextTruncate.AtEnd,
+          TextWrapped = false,
           TextXAlignment = Enum.TextXAlignment.Left,
           TextYAlignment = Enum.TextYAlignment.Top,
           BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -2594,6 +2727,7 @@ function WisHub_Library:CreateWindow(Config)
           BorderSizePixel = 0,
           Position = UDim2.new(0, 10, 0, 21),
           Size = UDim2.new(1, -180, 0, 12),
+          Visible = Content ~= "",
           ZIndex = 3,
           Name = "DropdownContent"
         }, Dropdown)
@@ -2659,10 +2793,16 @@ function WisHub_Library:CreateWindow(Config)
           if not Popup then return end
 
           local PopupWidth = 148
-          local RootPosition = LayersReal.AbsolutePosition
-          local RootSize = LayersReal.AbsoluteSize
-          local FieldPosition = SelectOptionsFrame.AbsolutePosition
-          local FieldSize = SelectOptionsFrame.AbsoluteSize
+          local Success, RootPosition, RootSize, FieldPosition, FieldSize = pcall(function()
+            return LayersReal.AbsolutePosition, LayersReal.AbsoluteSize, SelectOptionsFrame.AbsolutePosition, SelectOptionsFrame.AbsoluteSize
+          end)
+
+          if not Success then
+            Popup.Position = UDim2.new(1, -PopupWidth - 8, 0, 82)
+            Popup.Size = UDim2.new(0, PopupWidth, 0, PopupHeight)
+            return
+          end
+
           local X = FieldPosition.X - RootPosition.X + FieldSize.X - PopupWidth
           local YBelow = FieldPosition.Y - RootPosition.Y + FieldSize.Y + 6
           local YAbove = FieldPosition.Y - RootPosition.Y - PopupHeight - 6
@@ -2684,8 +2824,9 @@ function WisHub_Library:CreateWindow(Config)
 
         local function ApplyDropdownSize()
           Dropdown.Size = UDim2.new(1, 0, 0, BaseHeight)
-          DropdownButton.Size = UDim2.new(1, 0, 0, BaseHeight)
           SelectOptionsFrame.Position = UDim2.new(1, -7, 0, BaseHeight / 2)
+          DropdownButton.Position = UDim2.new(1, -7, 0, BaseHeight / 2)
+          DropdownButton.Size = UDim2.new(0, 148, 0, 30)
 
           UpdatePopupPosition()
 
@@ -2693,23 +2834,14 @@ function WisHub_Library:CreateWindow(Config)
         end
 
         local function UpdateBaseHeight()
-          local ContentWidth = math.max(1, DropdownContent.AbsoluteSize.X)
-          local LineCount = 1
-
-          if Content ~= "" then
-            LineCount = math.max(1, math.ceil(DropdownContent.TextBounds.X / ContentWidth))
-          end
-
-          DropdownContent.Size = UDim2.new(1, -180, 0, math.max(12, 12 * LineCount))
-          BaseHeight = Content == "" and 35 or math.max(35, DropdownContent.AbsoluteSize.Y + 30)
+          BaseHeight = CompactRowHeight(Content)
+          DropdownTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
+          DropdownContent.Visible = Content ~= ""
+          DropdownContent.Size = UDim2.new(1, -180, 0, 12)
           ApplyDropdownSize()
         end
 
-        task.defer(UpdateBaseHeight)
-
-        DropdownContent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-          UpdateBaseHeight()
-        end)
+        UpdateBaseHeight()
 
         local function SetDisplayText()
           local DisplayText = table.concat(Funcs_Dropdown.Value, ", ")
@@ -2720,7 +2852,7 @@ function WisHub_Library:CreateWindow(Config)
         local function ClearPopupOptions()
           if not PopupScroll then return end
 
-          for _, Child in ipairs(PopupScroll:GetChildren()) do
+          for _, Child in ipairs(SafeChildren(PopupScroll)) do
             if Child:IsA("Frame") then
               Child:Destroy()
             end
@@ -2730,7 +2862,7 @@ function WisHub_Library:CreateWindow(Config)
         local function UpdatePopupSelectionVisuals()
           if not PopupScroll then return end
 
-          for _, Option in ipairs(PopupScroll:GetChildren()) do
+          for _, Option in ipairs(SafeChildren(PopupScroll)) do
             if Option:IsA("Frame") and Option.Name == "Option" then
               local OptionText = Option:FindFirstChild("OptionText")
               local ChooseFrame = Option:FindFirstChild("ChooseFrame")
@@ -2738,14 +2870,14 @@ function WisHub_Library:CreateWindow(Config)
               if OptionText and ChooseFrame then
                 local Selected = table.find(Funcs_Dropdown.Value, OptionText.Text) ~= nil
 
-                TweenService:Create(Option, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                SafeTween(Option, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                   BackgroundColor3 = Selected and Color3.fromRGB(48, 24, 70) or Custom.Surface3,
                   BackgroundTransparency = Selected and 0.08 or 0.999
-                }):Play()
+                })
 
-                TweenService:Create(ChooseFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                SafeTween(ChooseFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                   Size = Selected and UDim2.new(0, 2, 0, 14) or UDim2.new(0, 0, 0, 0)
-                }):Play()
+                })
               end
             end
           end
@@ -2829,16 +2961,16 @@ function WisHub_Library:CreateWindow(Config)
 
               OptionButton.MouseEnter:Connect(function()
                 local IsSelectedNow = table.find(Funcs_Dropdown.Value, OptionName) ~= nil
-                TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                SafeTween(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                   BackgroundTransparency = IsSelectedNow and 0.08 or 0.18
-                }):Play()
+                })
               end)
 
               OptionButton.MouseLeave:Connect(function()
                 local IsSelectedNow = table.find(Funcs_Dropdown.Value, OptionName) ~= nil
-                TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                SafeTween(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                   BackgroundTransparency = IsSelectedNow and 0.08 or 0.999
-                }):Play()
+                })
               end)
 
               OptionButton.Activated:Connect(function()
@@ -2909,10 +3041,10 @@ function WisHub_Library:CreateWindow(Config)
             PopupSearch = nil
             PopupScroll = nil
 
-            TweenService:Create(ClosingPopup, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            SafeTween(ClosingPopup, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
               Size = UDim2.new(0, 148, 0, 0),
               BackgroundTransparency = 0.35
-            }):Play()
+            })
 
             task.delay(0.09, function()
               if ClosingPopup then
@@ -2921,9 +3053,9 @@ function WisHub_Library:CreateWindow(Config)
             end)
           end
 
-          TweenService:Create(OptionImg, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+          SafeTween(OptionImg, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Rotation = 0
-          }):Play()
+          })
 
           ApplyDropdownSize()
         end
@@ -3014,9 +3146,9 @@ function WisHub_Library:CreateWindow(Config)
             RebuildPopup(PopupSearch.Text)
           end)
 
-          TweenService:Create(OptionImg, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+          SafeTween(OptionImg, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Rotation = 180
-          }):Play()
+          })
 
           RebuildPopup("")
         end
