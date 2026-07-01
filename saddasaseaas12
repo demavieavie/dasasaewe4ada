@@ -11,6 +11,8 @@ local Custom = {}
 Custom.ColorRGB = Color3.fromRGB(183, 0, 226)
 Custom.Font = Enum.Font.GothamBold
 Custom.FontBody = Enum.Font.Gotham
+Custom.GuiName = "WisHub_Main_UI"
+Custom.ToggleGuiName = "WisHub_Toggle_UI"
 
 function Custom:Create(Name, Properties, Parent)
     local _instance = Instance.new(Name)
@@ -44,9 +46,14 @@ local function Debounce(func, delay)
 end
 
 local function OpenClose()
+    local GuiParent = RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui"))
+    local OldToggleGui = GuiParent:FindFirstChild(Custom.ToggleGuiName)
+    if OldToggleGui then OldToggleGui:Destroy() end
+
     local ScreenGui = Custom:Create("ScreenGui", {
+        Name = Custom.ToggleGuiName,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
+    }, GuiParent)
 
     local Close_ImageButton = Custom:Create("ImageButton", {
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -452,9 +459,14 @@ function WisHub_Library:CreateWindow(Config)
     end
 
     -- Main GUI
+    local GuiParent = RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui"))
+    local OldWisHubGui = GuiParent:FindFirstChild(Custom.GuiName)
+    if OldWisHubGui then OldWisHubGui:Destroy() end
+
     local WisHubGui = Custom:Create("ScreenGui", {
+        Name = Custom.GuiName,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    }, RunService:IsStudio() and Player.PlayerGui or (gethui() or cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")))
+    }, GuiParent)
 
     -- Shadow (simplified - single image label)
     local DropShadow = Custom:Create("ImageLabel", {
@@ -691,6 +703,7 @@ function WisHub_Library:CreateWindow(Config)
     local SearchTab = Custom:Create("Frame", {
         AnchorPoint = Vector2.new(0.5, 0),
         BackgroundColor3 = Color3.fromRGB(30, 30, 40),
+        ClipsDescendants = true,
         Position = UDim2.new(0.5, 0, 0, 2),
         Size = UDim2.new(1, -4, 0, 26),
         Name = "SearchTab"
@@ -726,17 +739,17 @@ function WisHub_Library:CreateWindow(Config)
 
     local SearchBox = Custom:Create("TextBox", {
         Font = Custom.Font,
-        PlaceholderText = "Search tabs & sections...",
+        PlaceholderText = "Search",
         PlaceholderColor3 = Color3.fromRGB(140, 140, 148),
         Text = "",
         TextColor3 = Colors.TextTitle,
-        TextSize = 13,
+        TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 28, 0.5, 0),
-        Size = UDim2.new(1, -45, 1, 0),
+        Size = UDim2.new(1, -50, 1, 0),
         Name = "SearchBox"
     }, SearchTab)
 
@@ -744,13 +757,13 @@ function WisHub_Library:CreateWindow(Config)
     local SearchResults = Custom:Create("Frame", {
         BackgroundColor3 = Colors.DropdownBg,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 30),
-        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 2, 0, 32),
+        Size = UDim2.new(1, -4, 0, 0),
         ClipsDescendants = true,
         Visible = false,
         ZIndex = 100,
         Name = "SearchResults"
-    }, SearchTab)
+    }, LayersTab)
 
     Custom:Create("UICorner", {CornerRadius = UDim.new(0, 6)}, SearchResults)
     Custom:Create("UIStroke", {Color = Colors.BorderHighlight, Thickness = 1, Transparency = 0.4}, SearchResults)
@@ -777,7 +790,7 @@ function WisHub_Library:CreateWindow(Config)
         end
 
         if #results == 0 then
-            SearchResults.Size = UDim2.new(1, 0, 0, 0)
+            SearchResults.Size = UDim2.new(1, -4, 0, 0)
             return
         end
 
@@ -840,7 +853,7 @@ function WisHub_Library:CreateWindow(Config)
         end
 
         SearchScroll.CanvasSize = UDim2.new(0, 0, 0, y)
-        SearchResults.Size = UDim2.new(1, 0, 0, math.min(y, 150))
+        SearchResults.Size = UDim2.new(1, -4, 0, math.min(y, 150))
     end
 
     -- Fuzzy search function
