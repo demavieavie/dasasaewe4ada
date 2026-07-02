@@ -18,6 +18,9 @@ local Custom = {} do
   Custom.Muted = Color3.fromRGB(156, 154, 170)
   Custom.Font = Enum.Font.GothamBold
   Custom.FontBody = Enum.Font.Gotham
+  Custom.ReducedMotion = true
+  Custom.RippleEnabled = false
+  Custom.ShadowEnabled = false
 
   function Custom:Create(Name, Properties, Parent)
     local _instance = Instance.new(Name)
@@ -74,6 +77,10 @@ end
 
 local function SafeTween(Object, Info, Properties)
   if not Object then return nil end
+  if Custom.ReducedMotion then
+    TrySet(Object, Properties)
+    return nil
+  end
 
   local Success, Tween = pcall(function()
     return TweenService:Create(Object, Info, Properties)
@@ -253,6 +260,8 @@ local function MakeDraggable(topbarobject, object)
 end
 
 function CircleClick(Button, X, Y)
+  if not Custom.RippleEnabled then return end
+
 	task.spawn(function()
 		pcall(function()
       Button.ClipsDescendants = true
@@ -416,9 +425,9 @@ function WisHub_Library:SetNotification(Config)
   })
 
   Custom:Create("ImageLabel", {
-    Image = "rbxassetid://6015897843",
+    Image = Custom.ShadowEnabled and "rbxassetid://6015897843" or "",
     ImageColor3 = Color3.fromRGB(0, 0, 0),
-    ImageTransparency = 0.5,
+    ImageTransparency = Custom.ShadowEnabled and 0.5 or 1,
     ScaleType = Enum.ScaleType.Slice,
     SliceCenter = Rect.new(49, 49, 450, 450),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -568,6 +577,14 @@ function WisHub_Library:CreateWindow(Config)
   local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://105006444774299"
   local HubLogoSize = Config.LogoSize or 24
   local HubLogoColor = Config.LogoColor or Color3.fromRGB(255, 255, 255)
+  local ReducedMotion = Config.ReducedMotion
+  if ReducedMotion == nil then
+    ReducedMotion = Config.Lightweight ~= false
+  end
+
+  Custom.ReducedMotion = ReducedMotion == true
+  Custom.RippleEnabled = (Config.RippleEnabled == true or Config.Ripple == true) and not Custom.ReducedMotion
+  Custom.ShadowEnabled = Config.ShadowEnabled == true or Config.Shadow == true
 
   local Funcs = {}
 
@@ -586,9 +603,9 @@ function WisHub_Library:CreateWindow(Config)
   }, WisHubGui)
 
   local DropShadow = Custom:Create("ImageLabel", {
-    Image = "rbxassetid://6015897843",
+    Image = Custom.ShadowEnabled and "rbxassetid://6015897843" or "",
     ImageColor3 = Color3.fromRGB(5, 5, 9),
-    ImageTransparency = 0.52,
+    ImageTransparency = Custom.ShadowEnabled and 0.52 or 1,
     ScaleType = Enum.ScaleType.Slice,
     SliceCenter = Rect.new(49, 49, 450, 450),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -3278,7 +3295,7 @@ function WisHub_Library:CreateWindow(Config)
         local selectedConfig = tostring(Config.Default or Config.Selected or "")
         local currentName = selectedConfig
         local autoLoadEnabled = Config.AutoLoadDefault == true or Config.AutoLoadEnabled == true
-        local NameInput, ConfigList
+        local NameInput, ConfigList, ImportInput
 
         local function FirstChoice(Value)
           if type(Value) == "table" then
@@ -3310,6 +3327,41 @@ function WisHub_Library:CreateWindow(Config)
           return Value
         end
 
+        local function ResolveActionName()
+          local Name = ResolveName()
+          if Name == "" then
+            Name = selectedConfig
+          end
+
+          Name = tostring(Name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+
+          if Name ~= "" then
+            currentName = Name
+          end
+
+          return Name
+        end
+
+        local function ResolveImportScript()
+          local Value = ImportInput and ImportInput.Get and ImportInput:Get() or Config.ImportDefault or Config.DefaultImport or ""
+          if Value == "" and type(Config.ImportScript) == "string" then
+            Value = Config.ImportScript
+          end
+
+          return tostring(Value or "")
+        end
+
+        local function FirstHandler(...)
+          for Index = 1, select("#", ...) do
+            local Handler = select(Index, ...)
+            if type(Handler) == "function" then
+              return Handler
+            end
+          end
+
+          return nil
+        end
+
         local function RefreshList(Selecting)
           local List = GetSavedList()
           local Selected = Selecting or selectedConfig
@@ -3334,8 +3386,8 @@ function WisHub_Library:CreateWindow(Config)
 
         NameInput = Item:AddInput({
           Title = Config.NameTitle or "Config Name",
-          Content = Config.NameContent or "Input nama save",
-          Placeholder = Config.Placeholder or "Nama config",
+          Content = Config.NameContent or "Enter config name",
+          Placeholder = Config.Placeholder or "Config name",
           Default = currentName,
           Callback = function(Text)
             currentName = tostring(Text or "")
@@ -3344,7 +3396,7 @@ function WisHub_Library:CreateWindow(Config)
 
         ConfigList = Item:AddDropdown({
           Title = Config.ListTitle or "Saved Configs",
-          Content = Config.ListContent or "List saved config",
+          Content = Config.ListContent or "Saved config list",
           Multi = false,
           Options = GetSavedList(),
           Default = selectedConfig ~= "" and {selectedConfig} or {},
@@ -3361,6 +3413,16 @@ function WisHub_Library:CreateWindow(Config)
           end
         })
 
+        ImportInput = Item:AddInput({
+          Title = Config.ImportTitle or "Import Script",
+          Content = Config.ImportContent or "Paste exported script",
+          Placeholder = Config.ImportPlaceholder or "Paste export script",
+          Default = Config.ImportDefault or Config.DefaultImport or (type(Config.ImportScript) == "string" and Config.ImportScript or ""),
+          Callback = function(Text)
+            Config.ImportValue = tostring(Text or "")
+          end
+        })
+
         local function DoSave()
           local Name = ResolveName()
           if Name == "" then
@@ -3368,7 +3430,7 @@ function WisHub_Library:CreateWindow(Config)
           end
           if Name == "" then return false end
 
-          local Handler = Config.OnSave or Config.Save or Config.OnSaveAsAutoLoad or Config.SaveAsAutoLoad or Config.SaveAutoLoad
+          local Handler = FirstHandler(Config.OnSave, Config.Save, Config.OnSaveAsAutoLoad, Config.SaveAsAutoLoad, Config.SaveAutoLoad)
           local Result
 
           if Handler then
@@ -3387,6 +3449,62 @@ function WisHub_Library:CreateWindow(Config)
           return Result
         end
 
+        local function DoLoad()
+          local Name = ResolveActionName()
+          if Name == "" then return false end
+
+          local Handler = FirstHandler(Config.OnLoad, Config.Load, Config.LoadConfig, Config.OnLoadConfig)
+          if not Handler then return false end
+
+          local Result = Handler and Handler(Name)
+
+          if Result ~= false then
+            SyncSelected(type(Result) == "string" and Result or Name)
+          end
+
+          return Result
+        end
+
+        local function DoImport()
+          local Script = ResolveImportScript()
+          if Script == "" then return false end
+
+          local Handler = FirstHandler(Config.OnImportScript, Config.ImportScript, Config.ImportScriptCallback, Config.ImportScriptHandler, Config.OnImport, Config.Import, Config.ImportConfig)
+          if not Handler then return false end
+
+          local Result = Handler and Handler(Script, ResolveActionName())
+
+          if Result ~= false then
+            if type(Result) == "string" then
+              SyncSelected(Result)
+            else
+              RefreshList(selectedConfig)
+            end
+          end
+
+          return Result
+        end
+
+        local function DoExport()
+          local Name = ResolveActionName()
+          if Name == "" then return false end
+
+          local Handler = FirstHandler(Config.OnExportScript, Config.ExportScript, Config.OnExport, Config.Export, Config.ExportConfig)
+          if not Handler then return false end
+
+          local Result = Handler and Handler(Name)
+
+          if type(Result) == "string" and Result ~= "" and type(setclipboard) == "function" then
+            pcall(setclipboard, Result)
+          end
+
+          if Result ~= false then
+            SyncSelected(Name)
+          end
+
+          return Result
+        end
+
         local function ApplyAutoLoad(Enabled, Name)
           autoLoadEnabled = Enabled == true
           Name = Name or (selectedConfig ~= "" and selectedConfig or ResolveName())
@@ -3396,7 +3514,7 @@ function WisHub_Library:CreateWindow(Config)
             return false
           end
 
-          local Handler = Config.OnAutoLoadToggle or Config.SetAutoLoad or Config.OnAutoLoad or Config.AutoLoad
+          local Handler = FirstHandler(Config.OnAutoLoadToggle, Config.SetAutoLoad, Config.OnAutoLoad, Config.AutoLoad)
           local Result = Handler and Handler(Name, autoLoadEnabled) or autoLoadEnabled
 
           if Result ~= false and Name ~= "" then
@@ -3409,7 +3527,7 @@ function WisHub_Library:CreateWindow(Config)
         local AutoLoadReady = false
         local AutoLoadToggle = Item:AddToggle({
           Title = Config.AutoLoadText or "Auto Load",
-          Content = Config.AutoLoadContent or "Load config ini otomatis",
+          Content = Config.AutoLoadContent or "Load this config automatically",
           Default = autoLoadEnabled,
           Callback = function(Enabled)
             autoLoadEnabled = Enabled == true
@@ -3424,6 +3542,24 @@ function WisHub_Library:CreateWindow(Config)
           Title = Config.SaveText or "Save",
           Content = Config.SaveContent or "",
           Callback = DoSave
+        })
+
+        Item:AddButton({
+          Title = Config.LoadText or Config.LoadConfigText or "Load Config",
+          Content = Config.LoadContent or Config.LoadConfigContent or "",
+          Callback = DoLoad
+        })
+
+        Item:AddButton({
+          Title = Config.ImportButtonText or "Import Script",
+          Content = Config.ImportButtonContent or "",
+          Callback = DoImport
+        })
+
+        Item:AddButton({
+          Title = Config.ExportButtonText or Config.ExportText or "Export",
+          Content = Config.ExportButtonContent or Config.ExportContent or "",
+          Callback = DoExport
         })
 
         Item:AddButton({
@@ -3459,6 +3595,10 @@ function WisHub_Library:CreateWindow(Config)
           return autoLoadEnabled
         end
 
+        function ConfigPanel:GetImport()
+          return ResolveImportScript()
+        end
+
         function ConfigPanel:SetName(Name)
           SyncSelected(Name)
         end
@@ -3471,6 +3611,28 @@ function WisHub_Library:CreateWindow(Config)
           if AutoLoadToggle and AutoLoadToggle.Set then
             AutoLoadToggle:Set(Enabled == true)
           end
+        end
+
+        function ConfigPanel:SetImport(Value)
+          if ImportInput and ImportInput.Set then
+            ImportInput:Set(tostring(Value or ""))
+          end
+        end
+
+        function ConfigPanel:Save()
+          return DoSave()
+        end
+
+        function ConfigPanel:Load()
+          return DoLoad()
+        end
+
+        function ConfigPanel:Import()
+          return DoImport()
+        end
+
+        function ConfigPanel:Export()
+          return DoExport()
         end
 
         return ConfigPanel
