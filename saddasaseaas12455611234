@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
 
 local Custom = {} do
   Custom.ColorRGB = Color3.fromRGB(178, 80, 255)
@@ -106,6 +107,25 @@ local function SafeChildren(Object)
   end)
 
   return Success and Children or {}
+end
+
+local function CopyToClipboard(Text)
+  local ClipboardSetter
+
+  if type(setclipboard) == "function" then
+    ClipboardSetter = setclipboard
+  elseif type(toclipboard) == "function" then
+    ClipboardSetter = toclipboard
+  elseif type(set_clipboard) == "function" then
+    ClipboardSetter = set_clipboard
+  end
+
+  if not ClipboardSetter then
+    return false
+  end
+
+  local Success = pcall(ClipboardSetter, tostring(Text or ""))
+  return Success == true
 end
 
 local function EstimateWrappedHeight(Text, CharsPerLine, LineHeight, MinLines, MaxLines)
@@ -1352,6 +1372,138 @@ function WisHub_Library:CreateWindow(Config)
   local ActiveCompactDropdownClose = nil
   local ActiveCompactDropdownPopup = nil
   local ActiveCompactDropdownField = nil
+  local ConfigEntries = {}
+
+  local function CopySerializable(Value)
+    local ValueType = type(Value)
+
+    if ValueType == "nil" or ValueType == "boolean" or ValueType == "number" or ValueType == "string" then
+      return Value
+    end
+
+    if ValueType == "table" then
+      local Copy = {}
+      for Key, ItemValue in pairs(Value) do
+        local KeyType = type(Key)
+        if KeyType == "string" or KeyType == "number" then
+          Copy[Key] = CopySerializable(ItemValue)
+        end
+      end
+      return Copy
+    end
+
+    return tostring(Value)
+  end
+
+  local function ResolveConfigKey(ItemConfig, Title, TypeName, TabName, SectionName)
+    local Key = ItemConfig.Flag or ItemConfig.Key or ItemConfig.ConfigKey or ItemConfig.SaveKey or ItemConfig.Id or ItemConfig.ID
+    if Key ~= nil and tostring(Key) ~= "" then
+      return tostring(Key)
+    end
+
+    return table.concat({
+      tostring(TabName or ""),
+      tostring(SectionName or ""),
+      tostring(TypeName or ""),
+      tostring(Title or "")
+    }, "/")
+  end
+
+  local function ShouldRegisterConfig(ItemConfig, Title)
+    if tostring(Title or "") == "" then return false end
+    if ItemConfig.NoSave == true or ItemConfig.IgnoreConfig == true or ItemConfig.Save == false then return false end
+    return true
+  end
+
+  local function RegisterConfigValue(ItemConfig, Control, TypeName, Title, TabName, SectionName)
+    ItemConfig = ItemConfig or {}
+    if not Control or not ShouldRegisterConfig(ItemConfig, Title) then return nil end
+
+    local Key = ResolveConfigKey(ItemConfig, Title, TypeName, TabName, SectionName)
+    ConfigEntries[Key] = {
+      Control = Control,
+      Title = tostring(Title or ""),
+      Type = tostring(TypeName or ""),
+      Tab = tostring(TabName or ""),
+      Section = tostring(SectionName or "")
+    }
+
+    return Key
+  end
+
+  local function GetControlValue(Control)
+    if Control and type(Control.Get) == "function" then
+      return Control:Get()
+    end
+
+    return Control and Control.Value
+  end
+
+  local function SetControlValue(Control, Value)
+    if Control and type(Control.Set) == "function" then
+      local Result = Control:Set(Value)
+      if Result ~= false and type(Control.ConfigCallback) == "function" then
+        local CallbackResult = Control.ConfigCallback()
+        if CallbackResult == false then
+          return false
+        end
+      end
+
+      return Result
+    end
+
+    if Control then
+      Control.Value = Value
+      return true
+    end
+
+    return false
+  end
+
+  local function ExportConfigJson(Name)
+    local Values = {}
+
+    for Key, Entry in pairs(ConfigEntries) do
+      Values[Key] = CopySerializable(GetControlValue(Entry.Control))
+    end
+
+    local Payload = {
+      Name = tostring(Name or ""),
+      Version = 1,
+      Values = Values
+    }
+
+    local Success, Encoded = pcall(function()
+      return HttpService:JSONEncode(Payload)
+    end)
+
+    return Success and Encoded or false
+  end
+
+  local function ImportConfigJson(Json)
+    local Success, Decoded = pcall(function()
+      return HttpService:JSONDecode(tostring(Json or ""))
+    end)
+
+    if not Success or type(Decoded) ~= "table" then
+      return false
+    end
+
+    local Values = Decoded.Values or Decoded.values or Decoded
+    if type(Values) ~= "table" then
+      return false
+    end
+
+    local Applied = 0
+    for Key, Value in pairs(Values) do
+      local Entry = ConfigEntries[tostring(Key)]
+      if Entry and SetControlValue(Entry.Control, Value) ~= false then
+        Applied += 1
+      end
+    end
+
+    return Applied
+  end
 
   local function NormalizeTabName(TabName)
     local Text = tostring(TabName or "")
@@ -2293,7 +2445,13 @@ function WisHub_Library:CreateWindow(Config)
           ToggleAnimation(Funcs_Toggle.Value)
           return Result
         end
+
+        function Funcs_Toggle:Get()
+          return Funcs_Toggle.Value
+        end
+
         Funcs_Toggle:Set(Funcs_Toggle.Value)
+        RegisterConfigValue(Config, Funcs_Toggle, "Toggle", Title, _Name, SectionState.Title)
 
         RegisterSearchEntry({
           Title = Title,
@@ -2476,7 +2634,15 @@ function WisHub_Library:CreateWindow(Config)
             
           SafeTween(SliderDraggable, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) })
         end
-        
+
+        function Funcs_Slider:Get()
+          return Funcs_Slider.Value
+        end
+
+        Funcs_Slider.ConfigCallback = function()
+          return Callback(Funcs_Slider.Value)
+        end
+         
         local _LastX = nil
         local moveConn = nil
 
@@ -2542,6 +2708,7 @@ function WisHub_Library:CreateWindow(Config)
         
         Funcs_Slider:Set(tonumber(Default))
         Callback(Funcs_Slider.Value)
+        RegisterConfigValue(Config, Funcs_Slider, "Slider", Title, _Name, SectionState.Title)
 
         RegisterSearchEntry({
           Title = Title,
@@ -2685,6 +2852,7 @@ function WisHub_Library:CreateWindow(Config)
 				end)
 
 				Funcs_Input:Set(Default)
+        RegisterConfigValue(Config, Funcs_Input, "Input", Title, _Name, SectionState.Title)
 
         RegisterSearchEntry({
           Title = Title,
@@ -3273,6 +3441,7 @@ function WisHub_Library:CreateWindow(Config)
         end
 
         Funcs_Dropdown:Refresh(Funcs_Dropdown.Options, Funcs_Dropdown.Value)
+        RegisterConfigValue(Config, Funcs_Dropdown, "Dropdown", Title, _Name, SectionState.Title)
 
         RegisterSearchEntry({
           Title = Title,
@@ -3295,6 +3464,7 @@ function WisHub_Library:CreateWindow(Config)
         local selectedConfig = tostring(Config.Default or Config.Selected or "")
         local currentName = selectedConfig
         local autoLoadEnabled = Config.AutoLoadDefault == true or Config.AutoLoadEnabled == true
+        local runtimeConfigs = {}
         local NameInput, ConfigList, ImportInput
 
         local function FirstChoice(Value)
@@ -3389,6 +3559,7 @@ function WisHub_Library:CreateWindow(Config)
           Content = Config.NameContent or "Enter config name",
           Placeholder = Config.Placeholder or "Config name",
           Default = currentName,
+          NoSave = true,
           Callback = function(Text)
             currentName = tostring(Text or "")
           end
@@ -3400,6 +3571,7 @@ function WisHub_Library:CreateWindow(Config)
           Multi = false,
           Options = GetSavedList(),
           Default = selectedConfig ~= "" and {selectedConfig} or {},
+          NoSave = true,
           Callback = function(Choice)
             local Picked = FirstChoice(Choice)
             if Picked ~= "" then
@@ -3414,10 +3586,11 @@ function WisHub_Library:CreateWindow(Config)
         })
 
         ImportInput = Item:AddInput({
-          Title = Config.ImportTitle or "Import Script",
-          Content = Config.ImportContent or "Paste exported script",
-          Placeholder = Config.ImportPlaceholder or "Paste export script",
+          Title = Config.ImportTitle or "Import JSON",
+          Content = Config.ImportContent or "Paste exported JSON",
+          Placeholder = Config.ImportPlaceholder or "Paste exported JSON",
           Default = Config.ImportDefault or Config.DefaultImport or (type(Config.ImportScript) == "string" and Config.ImportScript or ""),
+          NoSave = true,
           Callback = function(Text)
             Config.ImportValue = tostring(Text or "")
           end
@@ -3436,6 +3609,11 @@ function WisHub_Library:CreateWindow(Config)
           if Handler then
             Result = Handler(Name)
           else
+            local Json = ExportConfigJson(Name)
+            if Json then
+              runtimeConfigs[Name] = Json
+            end
+
             if type(Config.Saved) == "table" and not table.find(Config.Saved, Name) then
               table.insert(Config.Saved, Name)
             end
@@ -3454,9 +3632,21 @@ function WisHub_Library:CreateWindow(Config)
           if Name == "" then return false end
 
           local Handler = FirstHandler(Config.OnLoad, Config.Load, Config.LoadConfig, Config.OnLoadConfig)
-          if not Handler then return false end
+          if not Handler then
+            local Json = runtimeConfigs[Name]
+            if not Json and type(Config.SavedData) == "table" then
+              Json = Config.SavedData[Name]
+            end
 
-          local Result = Handler and Handler(Name)
+            if not Json then return false end
+            local Loaded = ImportConfigJson(Json)
+            if Loaded == false then return false end
+
+            SyncSelected(Name)
+            return Loaded
+          end
+
+          local Result = Handler(Name)
 
           if Result ~= false then
             SyncSelected(type(Result) == "string" and Result or Name)
@@ -3470,9 +3660,13 @@ function WisHub_Library:CreateWindow(Config)
           if Script == "" then return false end
 
           local Handler = FirstHandler(Config.OnImportScript, Config.ImportScript, Config.ImportScriptCallback, Config.ImportScriptHandler, Config.OnImport, Config.Import, Config.ImportConfig)
-          if not Handler then return false end
+          local Result
 
-          local Result = Handler and Handler(Script, ResolveActionName())
+          if Handler then
+            Result = Handler(Script, ResolveActionName())
+          else
+            Result = ImportConfigJson(Script)
+          end
 
           if Result ~= false then
             if type(Result) == "string" then
@@ -3487,15 +3681,21 @@ function WisHub_Library:CreateWindow(Config)
 
         local function DoExport()
           local Name = ResolveActionName()
-          if Name == "" then return false end
+          if Name == "" then
+            Name = Config.ExportName or Config.DefaultExportName or "WisHUB Config"
+          end
 
           local Handler = FirstHandler(Config.OnExportScript, Config.ExportScript, Config.OnExport, Config.Export, Config.ExportConfig)
-          if not Handler then return false end
+          local Result
 
-          local Result = Handler and Handler(Name)
+          if Handler then
+            Result = Handler(Name)
+          else
+            Result = ExportConfigJson(Name)
+          end
 
-          if type(Result) == "string" and Result ~= "" and type(setclipboard) == "function" then
-            pcall(setclipboard, Result)
+          if type(Result) == "string" and Result ~= "" then
+            CopyToClipboard(Result)
           end
 
           if Result ~= false then
@@ -3529,6 +3729,7 @@ function WisHub_Library:CreateWindow(Config)
           Title = Config.AutoLoadText or "Auto Load",
           Content = Config.AutoLoadContent or "Load this config automatically",
           Default = autoLoadEnabled,
+          NoSave = true,
           Callback = function(Enabled)
             autoLoadEnabled = Enabled == true
             if not AutoLoadReady then return end
@@ -3551,7 +3752,7 @@ function WisHub_Library:CreateWindow(Config)
         })
 
         Item:AddButton({
-          Title = Config.ImportButtonText or "Import Script",
+          Title = Config.ImportButtonText or "Import JSON",
           Content = Config.ImportButtonContent or "",
           Callback = DoImport
         })
