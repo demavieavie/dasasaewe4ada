@@ -136,7 +136,6 @@ end
 -- Auto row-sizing helpers.
 -- Geometry is tuned so a single-line description stays 44px (identical to the old fixed rows),
 -- while longer descriptions grow the row instead of getting cut off with "...".
-local ROW_DESC_TOP = 21
 local ROW_DESC_LINE = 13
 local ROW_BOTTOM_PAD = 10
 local ROW_MAX_LINES = 3
@@ -174,11 +173,63 @@ local function MeasureDescLines(WidthPx, Content, Font, TextSize, MaxLines)
 	return math.clamp(Lines, 1, MaxLines)
 end
 
-local function RowHeightForLines(Lines)
-	if Lines <= 0 then
-		return 35
+local ROW_TOP_PAD = 7
+local ROW_TITLE_LINE = 13
+local ROW_GAP = 1
+local ROW_TITLE_MAX_LINES = 2
+
+-- Lay out a compact row's (wrapping) title + optional (wrapping) description and return the
+-- row height. A single-line title with a single-line description stays 44px, and a single-line
+-- title with no description stays 35px (centered) -- identical to the old fixed rows.
+local function LayoutCompactRow(TitleLabel, DescLabel, Content, ReservedX)
+	Content = tostring(Content or "")
+	ReservedX = ReservedX or -180
+
+	local TitleLines = MeasureDescLines(
+		TitleLabel.AbsoluteSize.X,
+		TitleLabel.Text,
+		TitleLabel.Font,
+		TitleLabel.TextSize,
+		ROW_TITLE_MAX_LINES
+	)
+	if TitleLines <= 0 then
+		TitleLines = 1
 	end
-	return ROW_DESC_TOP + Lines * ROW_DESC_LINE + ROW_BOTTOM_PAD
+
+	if Content == "" then
+		if DescLabel then
+			DescLabel.Visible = false
+		end
+		if TitleLines <= 1 then
+			TitleLabel.Size = UDim2.new(1, ReservedX, 0, ROW_TITLE_LINE)
+			TitleLabel.Position = UDim2.new(0, 10, 0.5, -7)
+			return 35
+		end
+		TitleLabel.Size = UDim2.new(1, ReservedX, 0, TitleLines * ROW_TITLE_LINE)
+		TitleLabel.Position = UDim2.new(0, 10, 0, 11)
+		return 11 + TitleLines * ROW_TITLE_LINE + 11
+	end
+
+	local DescLines = MeasureDescLines(
+		DescLabel.AbsoluteSize.X,
+		Content,
+		DescLabel.Font,
+		DescLabel.TextSize,
+		ROW_MAX_LINES
+	)
+	if DescLines <= 0 then
+		DescLines = 1
+	end
+
+	local DescTop = ROW_TOP_PAD + TitleLines * ROW_TITLE_LINE + ROW_GAP
+
+	TitleLabel.Position = UDim2.new(0, 10, 0, ROW_TOP_PAD)
+	TitleLabel.Size = UDim2.new(1, ReservedX, 0, TitleLines * ROW_TITLE_LINE)
+	DescLabel.Visible = true
+	DescLabel.Position = UDim2.new(0, 10, 0, DescTop)
+	DescLabel.Size = UDim2.new(1, ReservedX, 0, DescLines * ROW_DESC_LINE)
+
+	return DescTop + DescLines * ROW_DESC_LINE + ROW_BOTTOM_PAD
 end
 
 -- Wire a description label so the row re-measures whenever its real width first resolves
@@ -241,7 +292,7 @@ local function OpenClose()
 		Position = UDim2.new(0.1021, 0, 0.0743, 0),
 		Size = UDim2.new(0, 50, 0, 50),
 		Image = "rbxassetid://117265667838927",
-		Visible = false,
+		Visible = true,
 	}, ScreenGui)
 
 	Custom:Create("UICorner", {
@@ -253,6 +304,9 @@ local function OpenClose()
 
 	local function UpdateDraggable(input)
 		local delta = input.Position - dragStart
+		if delta.Magnitude > 6 then
+			Close_ImageButton:SetAttribute("WisDragged", true)
+		end
 		Close_ImageButton.Position =
 			UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
@@ -265,6 +319,7 @@ local function OpenClose()
 			dragging = true
 			dragStart = input.Position
 			startPos = Close_ImageButton.Position
+			Close_ImageButton:SetAttribute("WisDragged", false)
 
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
@@ -1299,29 +1354,20 @@ function WisHub_Library:CreateWindow(Config)
 
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(RefreshSearchResults)
 
-	local UpdateSizeQueued = false
-	local function UpdateSize()
-		UpdateSizeQueued = false
-	end
-
-	ScrollTab.ChildAdded:Connect(UpdateSize)
-	ScrollTab.ChildRemoved:Connect(UpdateSize)
-	UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSize)
-
 	Min.Activated:Connect(function()
 		CircleClick(Min, Player:GetMouse().X, Player:GetMouse().Y)
 		DropShadowHolder.Visible = false
-
-		if not Open_Close.Visible then
-			Open_Close.Visible = true
-		end
 	end)
 
 	Open_Close.Activated:Connect(function()
-		DropShadowHolder.Visible = true
-		if Open_Close.Visible then
-			Open_Close.Visible = false
+		if Open_Close:GetAttribute("WisDragged") then
+			return
 		end
+		if not DropShadowHolder or not DropShadowHolder.Parent then
+			return
+		end
+		CircleClick(Open_Close, Player:GetMouse().X, Player:GetMouse().Y)
+		DropShadowHolder.Visible = not DropShadowHolder.Visible
 	end)
 
 	local ConfirmHolder = Custom:Create("Frame", {
@@ -1440,6 +1486,9 @@ function WisHub_Library:CreateWindow(Config)
 	end)
 
 	OkBtn.Activated:Connect(function()
+		if Open_Close then
+			Open_Close.Visible = false
+		end
 		if WisHubGui then
 			WisHubGui:Destroy()
 		end
@@ -2075,24 +2124,51 @@ function WisHub_Library:CreateWindow(Config)
 					Name = "ParagraphContent",
 				}, Paragraph)
 
+				ParagraphTitle.TextWrapped = true
 				local function UpdateParagraphSize()
-					local Lines = MeasureDescLines(
+					local TitleLines = MeasureDescLines(
+						ParagraphTitle.AbsoluteSize.X,
+						ParagraphTitle.Text,
+						ParagraphTitle.Font,
+						ParagraphTitle.TextSize,
+						3
+					)
+					if TitleLines <= 0 then
+						TitleLines = 1
+					end
+
+					local TitleHeight = TitleLines * ROW_TITLE_LINE
+					ParagraphTitle.Position = UDim2.new(0, 10, 0, ROW_TOP_PAD)
+					ParagraphTitle.Size = UDim2.new(1, -16, 0, TitleHeight)
+
+					local DescLines = MeasureDescLines(
 						ParagraphContent.AbsoluteSize.X,
 						ParagraphContent.Text,
 						ParagraphContent.Font,
 						ParagraphContent.TextSize,
 						6
 					)
-					local ContentHeight = math.max(ROW_DESC_LINE, Lines * ROW_DESC_LINE)
 
+					if DescLines <= 0 then
+						ParagraphContent.Visible = false
+						Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, ROW_TOP_PAD + TitleHeight + 11))
+						UpdateSizeSection()
+						return
+					end
+
+					local DescTop = ROW_TOP_PAD + TitleHeight + ROW_GAP
+					local ContentHeight = DescLines * ROW_DESC_LINE
+
+					ParagraphContent.Visible = true
+					ParagraphContent.Position = UDim2.new(0, 10, 0, DescTop)
 					ParagraphContent.Size = UDim2.new(1, -20, 0, ContentHeight)
-					Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, ContentHeight + 32))
+					Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, DescTop + ContentHeight + 11))
 
 					UpdateSizeSection()
 				end
 
 				UpdateParagraphSize()
-				BindAutoRowHeight(ParagraphContent, UpdateParagraphSize)
+				BindAutoRowHeight(ParagraphTitle, UpdateParagraphSize)
 
 				function SettingFuncs:Set(Config)
 					local Title = Config[1] or Config.Title or ""
@@ -2389,27 +2465,16 @@ function WisHub_Library:CreateWindow(Config)
 					Visible = Content ~= "",
 				}, Toggle)
 
+				ToggleTitle.TextWrapped = true
 				ToggleContent.TextWrapped = true
 				local function UpdateToggleSize()
-					if Content == "" then
-						RowHeight = 35
-						Toggle.Size = UDim2.new(1, 0, 0, RowHeight)
-						ToggleTitle.Position = UDim2.new(0, 10, 0.5, -7)
-						ToggleContent.Visible = false
-						UpdateSizeSection()
-						return
-					end
-					ToggleTitle.Position = UDim2.new(0, 10, 0, 7)
-					ToggleContent.Visible = true
-					local Lines = MeasureDescLines(ToggleContent.AbsoluteSize.X, Content, ToggleContent.Font, ToggleContent.TextSize)
-					ToggleContent.Size = UDim2.new(1, -100, 0, Lines * ROW_DESC_LINE)
-					RowHeight = RowHeightForLines(Lines)
+					RowHeight = LayoutCompactRow(ToggleTitle, ToggleContent, Content, -100)
 					Toggle.Size = UDim2.new(1, 0, 0, RowHeight)
 					UpdateSizeSection()
 				end
 
 				UpdateToggleSize()
-				BindAutoRowHeight(ToggleContent, UpdateToggleSize)
+				BindAutoRowHeight(ToggleTitle, UpdateToggleSize)
 
 				local ToggleButton = Custom:Create("TextButton", {
 					Name = "ToggleButton",
@@ -2496,6 +2561,11 @@ function WisHub_Library:CreateWindow(Config)
 					ToggleAnimation(Funcs_Toggle.Value)
 					return Result
 				end
+
+				function Funcs_Toggle:Get()
+					return Funcs_Toggle.Value
+				end
+
 				Funcs_Toggle:Set(Funcs_Toggle.Value)
 
 				RegisterSearchEntry({
@@ -2575,27 +2645,16 @@ function WisHub_Library:CreateWindow(Config)
 					Name = "SliderContent",
 				}, Slider)
 
+				SliderTitle.TextWrapped = true
 				SliderContent.TextWrapped = true
 				local function UpdateSliderSize()
-					if Content == "" then
-						RowHeight = 35
-						Slider.Size = UDim2.new(1, 0, 0, RowHeight)
-						SliderTitle.Position = UDim2.new(0, 10, 0.5, -7)
-						SliderContent.Visible = false
-						UpdateSizeSection()
-						return
-					end
-					SliderTitle.Position = UDim2.new(0, 10, 0, 7)
-					SliderContent.Visible = true
-					local Lines = MeasureDescLines(SliderContent.AbsoluteSize.X, Content, SliderContent.Font, SliderContent.TextSize)
-					SliderContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
-					RowHeight = RowHeightForLines(Lines)
+					RowHeight = LayoutCompactRow(SliderTitle, SliderContent, Content, -180)
 					Slider.Size = UDim2.new(1, 0, 0, RowHeight)
 					UpdateSizeSection()
 				end
 
 				UpdateSliderSize()
-				BindAutoRowHeight(SliderContent, UpdateSliderSize)
+				BindAutoRowHeight(SliderTitle, UpdateSliderSize)
 
 				local SliderInput = Custom:Create("Frame", {
 					AnchorPoint = Vector2.new(0, 0.5),
@@ -2683,7 +2742,7 @@ function WisHub_Library:CreateWindow(Config)
 					return Result
 				end
 
-				function Funcs_Slider:Set(Value)
+				function Funcs_Slider:Set(Value, SkipCallback)
 					Value = math.clamp(Round(Value, Increment), Min, Max)
 					Funcs_Slider.Value = Value
 					TrySet(TextBox, { Text = tostring(Value) })
@@ -2693,6 +2752,14 @@ function WisHub_Library:CreateWindow(Config)
 						TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 						{ Size = UDim2.fromScale((Value - Min) / (Max - Min), 1) }
 					)
+
+					if not SkipCallback then
+						Callback(Funcs_Slider.Value)
+					end
+				end
+
+				function Funcs_Slider:Get()
+					return Funcs_Slider.Value
 				end
 
 				local _LastX = nil
@@ -2725,7 +2792,7 @@ function WisHub_Library:CreateWindow(Config)
 										end)
 
 										if Success then
-											Funcs_Slider:Set(Min + ((Max - Min) * SizeScale))
+											Funcs_Slider:Set(Min + ((Max - Min) * SizeScale), true)
 										end
 									end
 								end
@@ -2767,15 +2834,12 @@ function WisHub_Library:CreateWindow(Config)
 					local CurrentText = tostring(SafeGet(TextBox, "Text", ""))
 					if CurrentText ~= "" then
 						Funcs_Slider:Set(tonumber(CurrentText) or 0)
-						Callback(Funcs_Slider.Value)
 					else
 						Funcs_Slider:Set(0)
-						Callback(Funcs_Slider.Value)
 					end
 				end)
 
 				Funcs_Slider:Set(tonumber(Default))
-				Callback(Funcs_Slider.Value)
 
 				RegisterSearchEntry({
 					Title = Title,
@@ -2852,27 +2916,16 @@ function WisHub_Library:CreateWindow(Config)
 					Parent = Input,
 				})
 
+				InputTitle.TextWrapped = true
 				InputContent.TextWrapped = true
 				local function UpdateInputSize()
-					if Content == "" then
-						RowHeight = 35
-						Input.Size = UDim2.new(1, 0, 0, RowHeight)
-						InputTitle.Position = UDim2.new(0, 10, 0.5, -7)
-						InputContent.Visible = false
-						UpdateSizeSection()
-						return
-					end
-					InputTitle.Position = UDim2.new(0, 10, 0, 7)
-					InputContent.Visible = true
-					local Lines = MeasureDescLines(InputContent.AbsoluteSize.X, Content, InputContent.Font, InputContent.TextSize)
-					InputContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
-					RowHeight = RowHeightForLines(Lines)
+					RowHeight = LayoutCompactRow(InputTitle, InputContent, Content, -180)
 					Input.Size = UDim2.new(1, 0, 0, RowHeight)
 					UpdateSizeSection()
 				end
 
 				UpdateInputSize()
-				BindAutoRowHeight(InputContent, UpdateInputSize)
+				BindAutoRowHeight(InputTitle, UpdateInputSize)
 
 				local InputFrame = Custom:Create("Frame", {
 					AnchorPoint = Vector2.new(1, 0.5),
@@ -3155,25 +3208,15 @@ function WisHub_Library:CreateWindow(Config)
 					UpdateSizeSection()
 				end
 
+				DropdownTitle.TextWrapped = true
 				DropdownContent.TextWrapped = true
 				local function UpdateBaseHeight()
-					if Content == "" then
-						BaseHeight = 35
-						DropdownTitle.Position = UDim2.new(0, 10, 0.5, -7)
-						DropdownContent.Visible = false
-						ApplyDropdownSize()
-						return
-					end
-					DropdownTitle.Position = UDim2.new(0, 10, 0, 7)
-					DropdownContent.Visible = true
-					local Lines = MeasureDescLines(DropdownContent.AbsoluteSize.X, Content, DropdownContent.Font, DropdownContent.TextSize)
-					DropdownContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
-					BaseHeight = RowHeightForLines(Lines)
+					BaseHeight = LayoutCompactRow(DropdownTitle, DropdownContent, Content, -180)
 					ApplyDropdownSize()
 				end
 
 				UpdateBaseHeight()
-				BindAutoRowHeight(DropdownContent, UpdateBaseHeight)
+				BindAutoRowHeight(DropdownTitle, UpdateBaseHeight)
 
 				local function SetDisplayText()
 					local DisplayText = table.concat(Funcs_Dropdown.Value, ", ")
