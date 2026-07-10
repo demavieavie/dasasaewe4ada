@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
+local TextService = game:GetService("TextService")
 
 local Custom = {}
 do
@@ -130,6 +131,69 @@ end
 
 local function CompactRowHeight(Content)
 	return tostring(Content or "") == "" and 35 or 44
+end
+
+-- Auto row-sizing helpers.
+-- Geometry is tuned so a single-line description stays 44px (identical to the old fixed rows),
+-- while longer descriptions grow the row instead of getting cut off with "...".
+local ROW_DESC_TOP = 21
+local ROW_DESC_LINE = 13
+local ROW_BOTTOM_PAD = 10
+local ROW_MAX_LINES = 3
+
+-- Measure how many wrapped lines a description needs at its real on-screen width.
+-- Falls back to a character estimate when the pixel width isn't resolved yet (first frame).
+local function MeasureDescLines(WidthPx, Content, Font, TextSize, MaxLines)
+	Content = tostring(Content or "")
+	MaxLines = MaxLines or ROW_MAX_LINES
+	if Content == "" then
+		return 0
+	end
+
+	WidthPx = math.floor(tonumber(WidthPx) or 0)
+	TextSize = TextSize or 12
+
+	local Lines
+	if WidthPx >= 8 then
+		local Ok, Bounds = pcall(function()
+			return TextService:GetTextSize(Content, TextSize, Font, Vector2.new(WidthPx, 1000000))
+		end)
+		if Ok and Bounds and Bounds.Y > 0 then
+			Lines = math.max(1, math.floor((Bounds.Y / math.max(1, TextSize)) + 0.5))
+		end
+	end
+
+	if not Lines then
+		local CharsPerLine = WidthPx >= 8 and math.max(8, math.floor(WidthPx / (TextSize * 0.55))) or 34
+		Lines = 0
+		for Segment in (Content .. "\n"):gmatch("(.-)\n") do
+			Lines += math.max(1, math.ceil(#Segment / CharsPerLine))
+		end
+	end
+
+	return math.clamp(Lines, 1, MaxLines)
+end
+
+local function RowHeightForLines(Lines)
+	if Lines <= 0 then
+		return 35
+	end
+	return ROW_DESC_TOP + Lines * ROW_DESC_LINE + ROW_BOTTOM_PAD
+end
+
+-- Wire a description label so the row re-measures whenever its real width first resolves
+-- (or changes). Guarded on width so our own height writes don't cause a feedback loop.
+local function BindAutoRowHeight(DescLabel, Recompute)
+	local LastWidth = -1
+	local Connection = DescLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		local Width = math.floor(DescLabel.AbsoluteSize.X)
+		if Width == LastWidth then
+			return
+		end
+		LastWidth = Width
+		Recompute()
+	end)
+	return Connection
 end
 
 local function GetGuiParent()
@@ -2001,7 +2065,7 @@ function WisHub_Library:CreateWindow(Config)
 					TextSize = 12,
 					TextTransparency = 0.6,
 					TextTruncate = Enum.TextTruncate.AtEnd,
-					TextWrapped = false,
+					TextWrapped = true,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					BackgroundTransparency = 0.999,
@@ -2012,7 +2076,14 @@ function WisHub_Library:CreateWindow(Config)
 				}, Paragraph)
 
 				local function UpdateParagraphSize()
-					local ContentHeight = EstimateWrappedHeight(ParagraphContent.Text, 58, 13, 1, 4)
+					local Lines = MeasureDescLines(
+						ParagraphContent.AbsoluteSize.X,
+						ParagraphContent.Text,
+						ParagraphContent.Font,
+						ParagraphContent.TextSize,
+						6
+					)
+					local ContentHeight = math.max(ROW_DESC_LINE, Lines * ROW_DESC_LINE)
 
 					ParagraphContent.Size = UDim2.new(1, -20, 0, ContentHeight)
 					Paragraph.Size = UDim2.new(1, 0, 0, math.max(35, ContentHeight + 32))
@@ -2021,6 +2092,7 @@ function WisHub_Library:CreateWindow(Config)
 				end
 
 				UpdateParagraphSize()
+				BindAutoRowHeight(ParagraphContent, UpdateParagraphSize)
 
 				function SettingFuncs:Set(Config)
 					local Title = Config[1] or Config.Title or ""
@@ -2317,15 +2389,27 @@ function WisHub_Library:CreateWindow(Config)
 					Visible = Content ~= "",
 				}, Toggle)
 
+				ToggleContent.TextWrapped = true
 				local function UpdateToggleSize()
-					RowHeight = CompactRowHeight(Content)
+					if Content == "" then
+						RowHeight = 35
+						Toggle.Size = UDim2.new(1, 0, 0, RowHeight)
+						ToggleTitle.Position = UDim2.new(0, 10, 0.5, -7)
+						ToggleContent.Visible = false
+						UpdateSizeSection()
+						return
+					end
+					ToggleTitle.Position = UDim2.new(0, 10, 0, 7)
+					ToggleContent.Visible = true
+					local Lines = MeasureDescLines(ToggleContent.AbsoluteSize.X, Content, ToggleContent.Font, ToggleContent.TextSize)
+					ToggleContent.Size = UDim2.new(1, -100, 0, Lines * ROW_DESC_LINE)
+					RowHeight = RowHeightForLines(Lines)
 					Toggle.Size = UDim2.new(1, 0, 0, RowHeight)
-					ToggleTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
-					ToggleContent.Visible = Content ~= ""
-					ToggleContent.Size = UDim2.new(1, -100, 0, 12)
+					UpdateSizeSection()
 				end
 
 				UpdateToggleSize()
+				BindAutoRowHeight(ToggleContent, UpdateToggleSize)
 
 				local ToggleButton = Custom:Create("TextButton", {
 					Name = "ToggleButton",
@@ -2491,15 +2575,27 @@ function WisHub_Library:CreateWindow(Config)
 					Name = "SliderContent",
 				}, Slider)
 
+				SliderContent.TextWrapped = true
 				local function UpdateSliderSize()
-					RowHeight = CompactRowHeight(Content)
+					if Content == "" then
+						RowHeight = 35
+						Slider.Size = UDim2.new(1, 0, 0, RowHeight)
+						SliderTitle.Position = UDim2.new(0, 10, 0.5, -7)
+						SliderContent.Visible = false
+						UpdateSizeSection()
+						return
+					end
+					SliderTitle.Position = UDim2.new(0, 10, 0, 7)
+					SliderContent.Visible = true
+					local Lines = MeasureDescLines(SliderContent.AbsoluteSize.X, Content, SliderContent.Font, SliderContent.TextSize)
+					SliderContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
+					RowHeight = RowHeightForLines(Lines)
 					Slider.Size = UDim2.new(1, 0, 0, RowHeight)
-					SliderTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
-					SliderContent.Visible = Content ~= ""
-					SliderContent.Size = UDim2.new(1, -180, 0, 12)
+					UpdateSizeSection()
 				end
 
 				UpdateSliderSize()
+				BindAutoRowHeight(SliderContent, UpdateSliderSize)
 
 				local SliderInput = Custom:Create("Frame", {
 					AnchorPoint = Vector2.new(0, 0.5),
@@ -2756,15 +2852,27 @@ function WisHub_Library:CreateWindow(Config)
 					Parent = Input,
 				})
 
+				InputContent.TextWrapped = true
 				local function UpdateInputSize()
-					RowHeight = CompactRowHeight(Content)
+					if Content == "" then
+						RowHeight = 35
+						Input.Size = UDim2.new(1, 0, 0, RowHeight)
+						InputTitle.Position = UDim2.new(0, 10, 0.5, -7)
+						InputContent.Visible = false
+						UpdateSizeSection()
+						return
+					end
+					InputTitle.Position = UDim2.new(0, 10, 0, 7)
+					InputContent.Visible = true
+					local Lines = MeasureDescLines(InputContent.AbsoluteSize.X, Content, InputContent.Font, InputContent.TextSize)
+					InputContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
+					RowHeight = RowHeightForLines(Lines)
 					Input.Size = UDim2.new(1, 0, 0, RowHeight)
-					InputTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
-					InputContent.Visible = Content ~= ""
-					InputContent.Size = UDim2.new(1, -180, 0, 12)
+					UpdateSizeSection()
 				end
 
 				UpdateInputSize()
+				BindAutoRowHeight(InputContent, UpdateInputSize)
 
 				local InputFrame = Custom:Create("Frame", {
 					AnchorPoint = Vector2.new(1, 0.5),
@@ -3047,15 +3155,25 @@ function WisHub_Library:CreateWindow(Config)
 					UpdateSizeSection()
 				end
 
+				DropdownContent.TextWrapped = true
 				local function UpdateBaseHeight()
-					BaseHeight = CompactRowHeight(Content)
-					DropdownTitle.Position = Content == "" and UDim2.new(0, 10, 0.5, -7) or UDim2.new(0, 10, 0, 7)
-					DropdownContent.Visible = Content ~= ""
-					DropdownContent.Size = UDim2.new(1, -180, 0, 12)
+					if Content == "" then
+						BaseHeight = 35
+						DropdownTitle.Position = UDim2.new(0, 10, 0.5, -7)
+						DropdownContent.Visible = false
+						ApplyDropdownSize()
+						return
+					end
+					DropdownTitle.Position = UDim2.new(0, 10, 0, 7)
+					DropdownContent.Visible = true
+					local Lines = MeasureDescLines(DropdownContent.AbsoluteSize.X, Content, DropdownContent.Font, DropdownContent.TextSize)
+					DropdownContent.Size = UDim2.new(1, -180, 0, Lines * ROW_DESC_LINE)
+					BaseHeight = RowHeightForLines(Lines)
 					ApplyDropdownSize()
 				end
 
 				UpdateBaseHeight()
+				BindAutoRowHeight(DropdownContent, UpdateBaseHeight)
 
 				local function SetDisplayText()
 					local DisplayText = table.concat(Funcs_Dropdown.Value, ", ")
