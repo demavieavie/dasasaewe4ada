@@ -2662,7 +2662,7 @@ function WisHub_Library:CreateWindow(Config)
 					BackgroundTransparency = 0.08,
 					BorderColor3 = Color3.fromRGB(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(1, -170, 0.5, 0),
+					Position = UDim2.new(1, -150, 0.5, 0),
 					Size = UDim2.new(0, 30, 0, 18),
 					Name = "SliderInput",
 				}, Slider)
@@ -3029,6 +3029,7 @@ function WisHub_Library:CreateWindow(Config)
 
 				local BaseHeight = CompactRowHeight(Content)
 				local PopupHeight = 0
+				local PopupWidth = 148
 				local IsOpen = false
 				local Popup, PopupSearch, PopupScroll
 
@@ -3164,7 +3165,6 @@ function WisHub_Library:CreateWindow(Config)
 						return
 					end
 
-					local PopupWidth = 148
 					local Success, RootPosition, RootSize, FieldPosition, FieldSize = pcall(function()
 						return LayersReal.AbsolutePosition,
 							LayersReal.AbsoluteSize,
@@ -3279,6 +3279,7 @@ function WisHub_Library:CreateWindow(Config)
 
 					local Query = string.lower(tostring(FilterText or ""))
 					local VisibleCount = 0
+					local MaxTextW = 0
 
 					for _, OptionValue in ipairs(Funcs_Dropdown.Options) do
 						local OptionName = tostring(OptionValue)
@@ -3286,6 +3287,8 @@ function WisHub_Library:CreateWindow(Config)
 
 						if IsVisible then
 							VisibleCount += 1
+							local _tw = 0; pcall(function() _tw = TextService:GetTextSize(OptionName, 12, Custom.Font, Vector2.new(10000, 100)).X end)
+							if _tw > MaxTextW then MaxTextW = _tw end
 							local Selected = table.find(Funcs_Dropdown.Value, OptionName) ~= nil
 
 							local Option = Custom:Create("Frame", {
@@ -3407,6 +3410,10 @@ function WisHub_Library:CreateWindow(Config)
 						}, Empty)
 					end
 
+					local MaxPopupW = 300
+					local _okw, _pw = pcall(function() return LayersReal.AbsoluteSize.X end)
+					if _okw and _pw and _pw > 0 then MaxPopupW = math.clamp(_pw - 12, 148, 320) end
+					PopupWidth = math.clamp(math.ceil(MaxTextW) + 32, 148, MaxPopupW)
 					local ContentHeight = math.max(28, math.max(VisibleCount, 1) * 28)
 					local BodyHeight = math.min(110, ContentHeight)
 					PopupScroll.CanvasSize = UDim2.new(0, 0, 0, ContentHeight)
