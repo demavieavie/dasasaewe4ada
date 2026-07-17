@@ -1511,6 +1511,99 @@ function WisHub_Library:CreateWindow(Config)
 	local ActiveCompactDropdownPopup = nil
 	local ActiveCompactDropdownField = nil
 
+	local ElementRegistry = {}
+	local ElementTabOrder = {}
+	-- Declaration order of keys per tab. ElementRegistry buckets are hash maps, so
+	-- iterating them yields an arbitrary order that changes between traversals —
+	-- useless for anything mirroring this window's layout.
+	local ElementKeyOrder = {}
+	local ElementMeta = setmetatable({}, { __mode = "k" })
+
+	local function ExtractElementTitle(Config)
+		if type(Config) == "string" then
+			return Config
+		end
+
+		if type(Config) ~= "table" then
+			return ""
+		end
+
+		return tostring(Config[1] or Config.Title or Config.Name or "")
+	end
+
+	-- Positional Config layout per element type, mirroring each Add* parser below:
+	-- { FieldName, PositionalIndex, DefaultWhenAbsent }. Centralised here so the
+	-- registry can publish RENDER HINTS alongside each element. Without these, a
+	-- consumer holding only the Funcs table cannot know a Slider's bounds or
+	-- whether a Dropdown is multi-select — both are plain locals inside Add*.
+	local ElementConfigHints = {
+		Toggle = { { "Default", 3, false } },
+		Input = { { "Default", 3, "" } },
+		Slider = { { "Increment", 3, 1 }, { "Min", 4, 0 }, { "Max", 5, 100 }, { "Default", 6, 50 } },
+		Dropdown = { { "Multi", 3, false }, { "Options", 4, {} }, { "Default", 5, {} } },
+	}
+
+	local function ExtractElementHints(TypeName, Config)
+		local Spec = ElementConfigHints[TypeName]
+		if not Spec or type(Config) ~= "table" then
+			return nil
+		end
+
+		local Hints = {}
+		for _, Entry in ipairs(Spec) do
+			local Field, Index, Default = Entry[1], Entry[2], Entry[3]
+			local Value = Config[Index]
+			if Value == nil then
+				Value = Config[Field]
+			end
+			if Value == nil then
+				Value = Default
+			end
+			Hints[Field] = Value
+		end
+
+		return Hints
+	end
+
+	local function RegisterElement(TabName, SectionTitle, TypeName, Config, Funcs)
+		if type(Funcs) ~= "table" then
+			return
+		end
+
+		local ElementTitle = ExtractElementTitle(Config)
+		if ElementTitle == "" then
+			return
+		end
+
+		local TabBucket = ElementRegistry[TabName]
+		if not TabBucket then
+			TabBucket = {}
+			ElementRegistry[TabName] = TabBucket
+			ElementKeyOrder[TabName] = {}
+			table.insert(ElementTabOrder, TabName)
+		end
+
+		local BaseKey = TypeName .. "_" .. ElementTitle
+		local Key, Suffix = BaseKey, 2
+		while TabBucket[Key] do
+			Key = BaseKey .. " (" .. Suffix .. ")"
+			Suffix += 1
+		end
+
+		TabBucket[Key] = Funcs
+		table.insert(ElementKeyOrder[TabName], Key)
+		ElementMeta[Funcs] = {
+			Tab = TabName,
+			Section = SectionTitle,
+			Type = TypeName,
+			Title = ElementTitle,
+			Key = Key,
+			Hints = ExtractElementHints(TypeName, Config),
+		}
+
+		return Key
+	end
+
 	local function NormalizeTabName(TabName)
 		local Text = tostring(TabName or "")
 		Text = Text:gsub("%[", ""):gsub("%]", "")
@@ -1709,6 +1802,56 @@ function WisHub_Library:CreateWindow(Config)
 
 	function Tabs:GetCurrentTab()
 		return CurrentTab
+	end
+
+	function Tabs:GetElements(TabName)
+		if TabName ~= nil then
+			return ElementRegistry[TabName]
+		end
+
+		return ElementRegistry
+	end
+
+	function Tabs:GetElement(TabNameOrKey, Key)
+		if Key ~= nil then
+			local TabBucket = ElementRegistry[TabNameOrKey]
+			return TabBucket and TabBucket[Key]
+		end
+
+		for _, TabName in ipairs(ElementTabOrder) do
+			local Found = ElementRegistry[TabName][TabNameOrKey]
+			if Found then
+				return Found
+			end
+		end
+	end
+
+	function Tabs:GetElementInfo(Element)
+		return ElementMeta[Element]
+	end
+
+	-- Flat, DECLARATION-ORDERED list of every registered element. Order is stable
+	-- across calls, so a consumer can mirror this window's layout from it.
+	function Tabs:ListElements()
+		local List = {}
+
+		for _, TabName in ipairs(ElementTabOrder) do
+			for _, Key in ipairs(ElementKeyOrder[TabName]) do
+				local Element = ElementRegistry[TabName][Key]
+				local Info = ElementMeta[Element]
+				table.insert(List, {
+					Tab = TabName,
+					Key = Key,
+					Type = Info and Info.Type,
+					Title = Info and Info.Title,
+					Section = Info and Info.Section,
+					Hints = Info and Info.Hints,
+					Element = Element,
+				})
+			end
+		end
+
+		return List
 	end
 
 	function Tabs:CreateTab(Config)
@@ -2394,6 +2537,13 @@ function WisHub_Library:CreateWindow(Config)
 					ButtonTitle.Text = NewTitle
 				end
 
+				-- Invoke the button's action without a physical click. Note Set() only
+				-- retitles the button, so it is NOT the programmatic equivalent of
+				-- pressing it — without this, Callback is reachable only via Activated.
+				function Funcs_Button:Fire()
+					return Callback()
+				end
+
 				RegisterSearchEntry({
 					Title = Title,
 					Type = "Button",
@@ -2554,11 +2704,18 @@ function WisHub_Library:CreateWindow(Config)
 				function Funcs_Toggle:Set(Value)
 					Value = Value == true
 					Funcs_Toggle.Value = Value
+					-- Paint BEFORE running the callback. Feature callbacks routinely run
+					-- their loop inline and never return (auto-farm, ESP, …), and the
+					-- repaint used to sit AFTER Callback() — so the switch stayed frozen
+					-- in its old position while the feature was actually running. Same
+					-- flaw hit the dashboard: no ack until the callback returns.
+					ToggleAnimation(Value)
 					local Result = Callback(Value)
+					-- Callback vetoed it (returned false) -> force off and repaint.
 					if Result == false then
 						Funcs_Toggle.Value = false
+						ToggleAnimation(false)
 					end
-					ToggleAnimation(Funcs_Toggle.Value)
 					return Result
 				end
 
@@ -3834,6 +3991,28 @@ function WisHub_Library:CreateWindow(Config)
 
 			function Item:AddConfig(Config)
 				return self:AddConfigPanel(Config)
+			end
+
+			local RegisterableItems = {
+				AddButton = "Button",
+				AddToggle = "Toggle",
+				AddSlider = "Slider",
+				AddInput = "Input",
+				AddDropdown = "Dropdown",
+				AddParagraph = "Paragraph",
+				AddConfigPanel = "Config",
+				AddSubSection = "SubSection",
+			}
+
+			for MethodName, TypeName in pairs(RegisterableItems) do
+				local Original = Item[MethodName]
+				if Original then
+					Item[MethodName] = function(SelfItem, Config, ...)
+						local Funcs = Original(SelfItem, Config, ...)
+						RegisterElement(_Name, Title, TypeName, Config, Funcs)
+						return Funcs
+					end
+				end
 			end
 
 			ItemCount += 1
