@@ -4483,6 +4483,25 @@ function WisHub_Library:CreateWindow(Config)
 				})
 
 				Item:AddButton({
+					Title = Config.SetAutoLoadText or "Set as Auto Load",
+					Content = Config.SetAutoLoadContent or "Save this config and load it automatically on startup",
+					Callback = function()
+						local Saved = DoSave()
+						if Saved == false then
+							return false
+						end
+
+						-- Flip the toggle through its normal path so the
+						-- auto-load marker is written AND the switch turns on.
+						if AutoLoadToggle and AutoLoadToggle.Set then
+							return AutoLoadToggle:Set(true)
+						end
+
+						return ApplyAutoLoad(true, type(Saved) == "string" and Saved or selectedConfig)
+					end,
+				})
+
+				Item:AddButton({
 					Title = Config.DeleteText or "Delete Config",
 					Content = Config.DeleteContent or "Remove the selected config",
 					Callback = function()
