@@ -1647,7 +1647,15 @@ function WisHub_Library:CreateWindow(Config)
 				for _, File in ipairs(listfiles(Folder .. "/configs")) do
 					local Name = tostring(File):match("([^/\\]+)%.json$")
 					if Name then
-						table.insert(List, Name)
+						local Keep = true
+						-- Without delfile, Delete blanks files instead; skip them.
+						if type(delfile) ~= "function" then
+							local OkRead, Content = pcall(readfile, File)
+							Keep = OkRead and tostring(Content or "") ~= ""
+						end
+						if Keep then
+							table.insert(List, Name)
+						end
 					end
 				end
 			end)
@@ -1675,6 +1683,16 @@ function WisHub_Library:CreateWindow(Config)
 			end
 
 			local Data = self:CollectValues()
+
+			-- Preserve loaded flags whose elements haven't registered yet
+			-- (staged UI construction), so an early autosave can't drop them.
+			if type(self.Pending) == "table" then
+				for Flag, Saved in pairs(self.Pending) do
+					if Data[Flag] == nil then
+						Data[Flag] = Saved
+					end
+				end
+			end
 
 			if not HasFileApi then
 				self.MemoryStore[Name] = Data
@@ -1749,13 +1767,11 @@ function WisHub_Library:CreateWindow(Config)
 			end)
 		end
 
-		function ConfigSystem:Load(Name)
-			local Data = self:ReadConfig(Name)
-			if not Data then
+		function ConfigSystem:ApplyData(Data)
+			if type(Data) ~= "table" then
 				return false
 			end
 
-			self.Current = SanitizeFileName(Name)
 			-- Keep the payload so elements registered after this load still get
 			-- their saved value the moment they are created.
 			self.Pending = Data
@@ -1769,6 +1785,36 @@ function WisHub_Library:CreateWindow(Config)
 			return true
 		end
 
+		function ConfigSystem:Load(Name)
+			local Data = self:ReadConfig(Name)
+			if not Data then
+				return false
+			end
+
+			self.Current = SanitizeFileName(Name)
+			return self:ApplyData(Data)
+		end
+
+		function ConfigSystem:Export()
+			local Ok, Encoded = pcall(function()
+				return HttpService:JSONEncode(self:CollectValues())
+			end)
+			return Ok and Encoded or nil
+		end
+
+		function ConfigSystem:Import(Text)
+			local Ok, Data = pcall(function()
+				return HttpService:JSONDecode(tostring(Text or ""))
+			end)
+			if not Ok or type(Data) ~= "table" then
+				return false
+			end
+
+			-- Accept both raw payloads and the old wrapped export format
+			-- ({ Game = ..., Version = ..., Data = {...} }).
+			return self:ApplyData(type(Data.Data) == "table" and Data.Data or Data)
+		end
+
 		function ConfigSystem:Delete(Name)
 			Name = SanitizeFileName(Name)
 			if Name == "" then
@@ -1779,7 +1825,13 @@ function WisHub_Library:CreateWindow(Config)
 			if HasFileApi then
 				pcall(function()
 					if isfile(ConfigPath(Name)) then
-						delfile(ConfigPath(Name))
+						if type(delfile) == "function" then
+							delfile(ConfigPath(Name))
+						else
+							-- No delfile on this executor: blank the file;
+							-- GetConfigs filters empty files out.
+							writefile(ConfigPath(Name), "")
+						end
 						Removed = true
 					end
 				end)
@@ -2230,6 +2282,14 @@ function WisHub_Library:CreateWindow(Config)
 
 	function Tabs:GetAutoLoadConfig()
 		return ConfigSystem:GetAutoLoad()
+	end
+
+	function Tabs:ExportConfig()
+		return ConfigSystem:Export() or ""
+	end
+
+	function Tabs:ImportConfig(Text)
+		return ConfigSystem:Import(Text)
 	end
 
 	function Tabs:CreateTab(Config)
@@ -4224,6 +4284,12 @@ function WisHub_Library:CreateWindow(Config)
 					local List = GetSavedList()
 					local Selected = Selecting or selectedConfig
 
+					-- Never display a selection that is no longer in the list
+					-- (config deleted outside the panel / by another session).
+					if Selected ~= "" and not table.find(List, Selected) then
+						Selected = ""
+					end
+
 					if ConfigList and ConfigList.Refresh then
 						ConfigList:Refresh(List, Selected ~= "" and { Selected } or {})
 					end
@@ -4360,8 +4426,9 @@ function WisHub_Library:CreateWindow(Config)
 					end
 
 					if Result ~= false then
-						SyncSelected(Name)
-						Notify('Loaded "' .. Name .. '"')
+						local Final = type(Result) == "string" and Result or Name
+						SyncSelected(Final)
+						Notify('Loaded "' .. Final .. '"')
 					else
 						Notify('Failed to load "' .. Name .. '"')
 					end
@@ -4392,14 +4459,16 @@ function WisHub_Library:CreateWindow(Config)
 					end
 
 					if Result ~= false then
+						local Final = type(Result) == "string" and Result or Name
+
 						if type(Config.Saved) == "table" then
-							local Index = table.find(Config.Saved, Name)
+							local Index = table.find(Config.Saved, Final) or table.find(Config.Saved, Name)
 							if Index then
 								table.remove(Config.Saved, Index)
 							end
 						end
 
-						if selectedConfig == Name then
+						if selectedConfig == Name or selectedConfig == Final then
 							selectedConfig = ""
 							currentName = ""
 							if NameInput and NameInput.Set then
@@ -4409,7 +4478,7 @@ function WisHub_Library:CreateWindow(Config)
 						end
 
 						RefreshList(selectedConfig)
-						Notify('Deleted "' .. Name .. '"')
+						Notify('Deleted "' .. Final .. '"')
 					else
 						Notify('Failed to delete "' .. Name .. '"')
 					end
@@ -4447,6 +4516,12 @@ function WisHub_Library:CreateWindow(Config)
 
 					if Result ~= false and autoLoadEnabled and Name ~= "" then
 						SyncSelected(type(Result) == "string" and Result or Name)
+					end
+
+					-- Enable failed: resync the flag and the switch, otherwise
+					-- GetAutoLoad() keeps reporting true while nothing is armed.
+					if Result == false and autoLoadEnabled then
+						SetAutoLoadVisual(false)
 					end
 
 					return Result
@@ -4509,6 +4584,96 @@ function WisHub_Library:CreateWindow(Config)
 					end,
 				})
 
+				local JsonText = ""
+				local JsonInput = Item:AddInput({
+					Title = Config.JsonTitle or "Config JSON",
+					Content = Config.JsonContent or "Paste JSON to import, or press Export to fill",
+					Placeholder = Config.JsonPlaceholder or "{...}",
+					Ignore = true,
+					Callback = function(Text)
+						JsonText = tostring(Text or "")
+					end,
+				})
+
+				local function DoExport()
+					local Handler = Config.OnExport or Config.Export
+					local Payload
+
+					if Handler then
+						Payload = Handler()
+					else
+						Payload = ConfigSystem:Export()
+					end
+
+					if type(Payload) ~= "string" or Payload == "" then
+						Notify("Failed to export config")
+						return false
+					end
+
+					JsonText = Payload
+					if JsonInput and JsonInput.Set then
+						JsonInput:Set(Payload)
+					end
+
+					pcall(function()
+						if type(setclipboard) == "function" then
+							setclipboard(Payload)
+						end
+					end)
+
+					Notify("Config JSON copied to clipboard")
+					return Payload
+				end
+
+				local function DoImport(Text)
+					Text = tostring(Text or "")
+					if Text == "" then
+						Text = JsonText
+					end
+					if Text == "" and type(getclipboard) == "function" then
+						pcall(function()
+							Text = tostring(getclipboard() or "")
+						end)
+					end
+					if Text == "" then
+						Notify("Paste a config JSON first")
+						return false
+					end
+
+					local Handler = Config.OnImport or Config.Import
+					local Result
+
+					if Handler then
+						Result = Handler(Text)
+					else
+						Result = ConfigSystem:Import(Text)
+					end
+
+					if Result ~= false then
+						Notify("Config imported")
+					else
+						Notify("Invalid config JSON")
+					end
+
+					return Result
+				end
+
+				Item:AddButton({
+					Title = Config.ExportText or "Export JSON",
+					Content = Config.ExportContent or "Copy current settings as JSON to clipboard",
+					Callback = function()
+						return DoExport()
+					end,
+				})
+
+				Item:AddButton({
+					Title = Config.ImportText or "Import JSON",
+					Content = Config.ImportContent or "Apply the JSON pasted above (or from clipboard)",
+					Callback = function()
+						return DoImport()
+					end,
+				})
+
 				local ConfigPanel = {}
 
 				function ConfigPanel:Refresh(Selecting)
@@ -4554,6 +4719,14 @@ function WisHub_Library:CreateWindow(Config)
 
 				function ConfigPanel:Delete(Name)
 					return DoDelete(Name)
+				end
+
+				function ConfigPanel:Export()
+					return DoExport()
+				end
+
+				function ConfigPanel:Import(Text)
+					return DoImport(Text)
 				end
 
 				return ConfigPanel
