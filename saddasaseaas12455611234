@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local TextService = game:GetService("TextService")
+local HttpService = game:GetService("HttpService")
 
 local Custom = {}
 do
@@ -15,7 +16,7 @@ do
 	Custom.Surface = Color3.fromRGB(18, 19, 27)
 	Custom.Surface2 = Color3.fromRGB(23, 22, 32)
 	Custom.Surface3 = Color3.fromRGB(31, 27, 42)
-	Custom.Stroke = Color3.fromRGB(112, 63, 176)
+	Custom.Stroke = Color3.fromRGB(112, 63, 176)	
 	Custom.Text = Color3.fromRGB(235, 236, 245)
 	Custom.Muted = Color3.fromRGB(156, 154, 170)
 	Custom.Font = Enum.Font.GothamBold
@@ -1565,6 +1566,353 @@ function WisHub_Library:CreateWindow(Config)
 		return Hints
 	end
 
+	-- ===== Built-in config system (auto save / auto load / delete) =====
+	-- Persists Toggle/Slider/Input/Dropdown values to JSON files. Saved values
+	-- are applied per element AT REGISTRATION time, so elements created after a
+	-- config load (later tabs, deferred sections) still receive their value —
+	-- a load that only touches already-existing elements is why dropdown/input
+	-- values sometimes never restored.
+	local ConfigSystem
+	do
+		local HasFileApi = type(writefile) == "function"
+			and type(readfile) == "function"
+			and type(isfile) == "function"
+			and type(isfolder) == "function"
+			and type(makefolder) == "function"
+			and type(listfiles) == "function"
+
+		local function SanitizeFileName(Name)
+			return (tostring(Name or ""):gsub("[\\/:*?\"<>|]", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+		end
+
+		local GameKey = "0"
+		pcall(function()
+			GameKey = tostring(game.GameId ~= 0 and game.GameId or game.PlaceId)
+		end)
+
+		local FolderTitle = SanitizeFileName(Title)
+		local Folder = tostring(
+			Config.ConfigFolder
+				or Config.Folder
+				or ("WisHUB/" .. (FolderTitle ~= "" and FolderTitle or "Hub") .. "/" .. GameKey)
+		)
+		local AutoLoadPath = Folder .. "/autoload.txt"
+
+		ConfigSystem = {
+			Enabled = Config.SaveConfig ~= false,
+			Folder = Folder,
+			Elements = {},
+			Pending = nil,
+			Current = "",
+			AutoSave = Config.AutoSave ~= false,
+			Applying = false,
+			-- Session-only fallback when the executor has no file API (Studio).
+			MemoryStore = {},
+			MemoryAutoLoad = "",
+		}
+
+		local function EnsureFolders()
+			if not HasFileApi then
+				return false
+			end
+
+			return (pcall(function()
+				local Path = ""
+				for Part in (Folder .. "/configs"):gmatch("[^/\\]+") do
+					Path = Path == "" and Part or (Path .. "/" .. Part)
+					if not isfolder(Path) then
+						makefolder(Path)
+					end
+				end
+			end))
+		end
+
+		local function ConfigPath(Name)
+			return Folder .. "/configs/" .. Name .. ".json"
+		end
+
+		function ConfigSystem:GetConfigs()
+			local List = {}
+
+			if not HasFileApi then
+				for Name in pairs(self.MemoryStore) do
+					table.insert(List, Name)
+				end
+				table.sort(List)
+				return List
+			end
+
+			EnsureFolders()
+			pcall(function()
+				for _, File in ipairs(listfiles(Folder .. "/configs")) do
+					local Name = tostring(File):match("([^/\\]+)%.json$")
+					if Name then
+						table.insert(List, Name)
+					end
+				end
+			end)
+			table.sort(List)
+			return List
+		end
+
+		function ConfigSystem:CollectValues()
+			local Data = {}
+			for Flag, Entry in pairs(self.Elements) do
+				local Ok, Value = pcall(function()
+					return Entry.Funcs:Get()
+				end)
+				if Ok then
+					Data[Flag] = { Type = Entry.Type, Value = Value }
+				end
+			end
+			return Data
+		end
+
+		function ConfigSystem:Save(Name)
+			Name = SanitizeFileName(Name)
+			if Name == "" then
+				return false
+			end
+
+			local Data = self:CollectValues()
+
+			if not HasFileApi then
+				self.MemoryStore[Name] = Data
+				self.Current = Name
+				return Name
+			end
+
+			if not EnsureFolders() then
+				return false
+			end
+
+			local Ok = pcall(function()
+				writefile(ConfigPath(Name), HttpService:JSONEncode(Data))
+			end)
+
+			if Ok then
+				self.Current = Name
+				return Name
+			end
+			return false
+		end
+
+		function ConfigSystem:ReadConfig(Name)
+			Name = SanitizeFileName(Name)
+			if Name == "" then
+				return nil
+			end
+
+			if not HasFileApi then
+				return self.MemoryStore[Name]
+			end
+
+			local Data
+			pcall(function()
+				if isfile(ConfigPath(Name)) then
+					Data = HttpService:JSONDecode(readfile(ConfigPath(Name)))
+				end
+			end)
+			return type(Data) == "table" and Data or nil
+		end
+
+		local function ApplyValue(Entry, Saved)
+			if type(Saved) ~= "table" then
+				return
+			end
+
+			local Value = Saved.Value
+			-- Own thread: feature callbacks routinely run their loop inline and
+			-- never return (auto farm, ESP, ...). Applying inline would freeze
+			-- the load and every element created after this one.
+			task.spawn(function()
+				pcall(function()
+					if Entry.Type == "Toggle" then
+						Entry.Funcs:Set(Value == true)
+					elseif Entry.Type == "Slider" then
+						local Number = tonumber(Value)
+						if Number then
+							Entry.Funcs:Set(Number)
+						end
+					elseif Entry.Type == "Input" then
+						if Value ~= nil then
+							Entry.Funcs:Set(tostring(Value))
+						end
+					elseif Entry.Type == "Dropdown" then
+						if type(Value) == "table" then
+							Entry.Funcs:Set(Value)
+						elseif Value ~= nil and Value ~= "" then
+							Entry.Funcs:Set({ tostring(Value) })
+						end
+					end
+				end)
+			end)
+		end
+
+		function ConfigSystem:Load(Name)
+			local Data = self:ReadConfig(Name)
+			if not Data then
+				return false
+			end
+
+			self.Current = SanitizeFileName(Name)
+			-- Keep the payload so elements registered after this load still get
+			-- their saved value the moment they are created.
+			self.Pending = Data
+			self.Applying = true
+			for Flag, Entry in pairs(self.Elements) do
+				if Data[Flag] ~= nil then
+					ApplyValue(Entry, Data[Flag])
+				end
+			end
+			self.Applying = false
+			return true
+		end
+
+		function ConfigSystem:Delete(Name)
+			Name = SanitizeFileName(Name)
+			if Name == "" then
+				return false
+			end
+
+			local Removed = false
+			if HasFileApi then
+				pcall(function()
+					if isfile(ConfigPath(Name)) then
+						delfile(ConfigPath(Name))
+						Removed = true
+					end
+				end)
+			elseif self.MemoryStore[Name] ~= nil then
+				self.MemoryStore[Name] = nil
+				Removed = true
+			end
+
+			if Removed then
+				if self:GetAutoLoad() == Name then
+					self:SetAutoLoad(Name, false)
+				end
+				if self.Current == Name then
+					self.Current = ""
+				end
+			end
+			return Removed
+		end
+
+		function ConfigSystem:GetAutoLoad()
+			if not HasFileApi then
+				return self.MemoryAutoLoad
+			end
+
+			local Name = ""
+			pcall(function()
+				if isfile(AutoLoadPath) then
+					Name = (tostring(readfile(AutoLoadPath) or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+				end
+			end)
+			return Name
+		end
+
+		function ConfigSystem:SetAutoLoad(Name, Enabled)
+			Name = SanitizeFileName(Name)
+			local Active = Enabled == true and Name ~= ""
+
+			if not HasFileApi then
+				self.MemoryAutoLoad = Active and Name or ""
+				return true
+			end
+
+			return (pcall(function()
+				if Active then
+					EnsureFolders()
+					writefile(AutoLoadPath, Name)
+				elseif isfile(AutoLoadPath) then
+					if type(delfile) == "function" then
+						delfile(AutoLoadPath)
+					else
+						writefile(AutoLoadPath, "")
+					end
+				end
+			end))
+		end
+
+		local SaveQueued = false
+		function ConfigSystem:QueueSave()
+			if not self.Enabled or not self.AutoSave or self.Applying or self.Current == "" or SaveQueued then
+				return
+			end
+
+			-- Debounced: a slider drag fires dozens of Set calls; write once.
+			SaveQueued = true
+			task.delay(0.6, function()
+				SaveQueued = false
+				if self.Current ~= "" and not self.Applying then
+					self:Save(self.Current)
+				end
+			end)
+		end
+
+		function ConfigSystem:RegisterElement(TypeName, TabName, SectionTitle, ElementConfig, Funcs)
+			if not self.Enabled then
+				return
+			end
+			if type(Funcs) ~= "table" or type(Funcs.Get) ~= "function" or type(Funcs.Set) ~= "function" then
+				return
+			end
+			if
+				type(ElementConfig) == "table"
+				and (ElementConfig.Ignore or ElementConfig.NoSave or ElementConfig.Save == false)
+			then
+				return
+			end
+
+			local ElementTitle = ExtractElementTitle(ElementConfig)
+			local Flag = type(ElementConfig) == "table" and (ElementConfig.Flag or ElementConfig.Id) or nil
+			Flag = tostring(
+				Flag or (TabName .. "/" .. tostring(SectionTitle or "") .. "/" .. TypeName .. "/" .. ElementTitle)
+			)
+
+			local BaseFlag, Suffix = Flag, 2
+			while self.Elements[Flag] do
+				Flag = BaseFlag .. "_" .. Suffix
+				Suffix += 1
+			end
+
+			local Entry = { Funcs = Funcs, Type = TypeName, Flag = Flag }
+			self.Elements[Flag] = Entry
+
+			-- Every value change funnels through Funcs:Set (clicks, drags,
+			-- FocusLost), so wrapping it gives reliable auto save for free.
+			local OriginalSet = Funcs.Set
+			Funcs.Set = function(SelfFuncs, Value, ...)
+				local Result = OriginalSet(SelfFuncs, Value, ...)
+				ConfigSystem:QueueSave()
+				return Result
+			end
+
+			if self.Pending and self.Pending[Flag] ~= nil then
+				local WasApplying = self.Applying
+				self.Applying = true
+				ApplyValue(Entry, self.Pending[Flag])
+				self.Applying = WasApplying
+			end
+		end
+
+		-- Resolve the auto-load config BEFORE any element exists: each element
+		-- then picks up its saved value as it registers, whatever tab or
+		-- creation order the script uses.
+		if ConfigSystem.Enabled then
+			local AutoName = ConfigSystem:GetAutoLoad()
+			if AutoName ~= "" then
+				local Data = ConfigSystem:ReadConfig(AutoName)
+				if Data then
+					ConfigSystem.Pending = Data
+					ConfigSystem.Current = AutoName
+				end
+			end
+		end
+	end
+
 	local function RegisterElement(TabName, SectionTitle, TypeName, Config, Funcs)
 		if type(Funcs) ~= "table" then
 			return
@@ -1600,6 +1948,10 @@ function WisHub_Library:CreateWindow(Config)
 			Key = Key,
 			Hints = ExtractElementHints(TypeName, Config),
 		}
+
+		if TypeName == "Toggle" or TypeName == "Slider" or TypeName == "Input" or TypeName == "Dropdown" then
+			ConfigSystem:RegisterElement(TypeName, TabName, SectionTitle, Config, Funcs)
+		end
 
 		return Key
 	end
@@ -1852,6 +2204,32 @@ function WisHub_Library:CreateWindow(Config)
 		end
 
 		return List
+	end
+
+	Tabs.ConfigSystem = ConfigSystem
+
+	function Tabs:SaveConfig(Name)
+		return ConfigSystem:Save(Name)
+	end
+
+	function Tabs:LoadConfig(Name)
+		return ConfigSystem:Load(Name)
+	end
+
+	function Tabs:DeleteConfig(Name)
+		return ConfigSystem:Delete(Name)
+	end
+
+	function Tabs:GetConfigs()
+		return ConfigSystem:GetConfigs()
+	end
+
+	function Tabs:SetAutoLoadConfig(Name, Enabled)
+		return ConfigSystem:SetAutoLoad(Name, Enabled ~= false)
+	end
+
+	function Tabs:GetAutoLoadConfig()
+		return ConfigSystem:GetAutoLoad()
 	end
 
 	function Tabs:CreateTab(Config)
@@ -3126,6 +3504,9 @@ function WisHub_Library:CreateWindow(Config)
 				}, InputFrame)
 
 				function Funcs_Input:Set(Value)
+					-- nil used to leave the box and stored value out of sync
+					-- (TrySet silently failed on Text = nil).
+					Value = Value == nil and "" or tostring(Value)
 					TrySet(InputTextBox, { Text = Value })
 					Funcs_Input.Value = Value
 					Callback(Value)
@@ -3748,7 +4129,20 @@ function WisHub_Library:CreateWindow(Config)
 
 				function Funcs_Dropdown:Refresh(RefreshList, Selecting)
 					Funcs_Dropdown.Options = RefreshList or {}
-					Funcs_Dropdown:Set(NormalizeDropdownValue(Selecting))
+
+					-- Refreshing options with no explicit selection used to WIPE
+					-- the current value (NormalizeDropdownValue(nil) -> {}), which
+					-- erased selections restored by config auto load. Keep the
+					-- current value unless the caller explicitly passes one.
+					if Selecting ~= nil then
+						Funcs_Dropdown:Set(NormalizeDropdownValue(Selecting))
+					else
+						Funcs_Dropdown:Set(Funcs_Dropdown.Value)
+					end
+
+					if PopupScroll then
+						RebuildPopup(SafeGet(PopupSearch, "Text", ""))
+					end
 				end
 
 				function Funcs_Dropdown:SetValues(RefreshList, Selecting)
@@ -3775,10 +4169,14 @@ function WisHub_Library:CreateWindow(Config)
 			function Item:AddConfigPanel(Config)
 				Config = Config or {}
 
-				local selectedConfig = tostring(Config.Default or Config.Selected or "")
+				-- Defaults to the built-in ConfigSystem (file-backed save/load/
+				-- delete/auto load). External handlers (OnSave, OnLoad, ...)
+				-- still take priority when provided.
+				local selectedConfig = tostring(Config.Default or Config.Selected or ConfigSystem.Current or "")
 				local currentName = selectedConfig
-				local autoLoadEnabled = Config.AutoLoadDefault == true or Config.AutoLoadEnabled == true
-				local NameInput, ConfigList
+				local NameInput, ConfigList, AutoLoadToggle
+				local AutoLoadReady = false
+				local SuppressAutoLoadToggle = false
 
 				local function FirstChoice(Value)
 					if type(Value) == "table" then
@@ -3790,14 +4188,26 @@ function WisHub_Library:CreateWindow(Config)
 
 				local function GetSavedList()
 					local Getter = Config.GetSaved or Config.GetConfigs
-					local List = Getter and Getter() or Config.Saved or Config.Options or {}
+					local List = Getter and Getter() or Config.Saved or Config.Options
 
 					if type(List) ~= "table" then
-						return {}
+						List = ConfigSystem:GetConfigs()
 					end
 
 					return List
 				end
+
+				local function GetAutoLoadName()
+					if Config.GetAutoLoad then
+						return tostring(Config.GetAutoLoad() or "")
+					end
+
+					return ConfigSystem:GetAutoLoad()
+				end
+
+				local autoLoadEnabled = Config.AutoLoadDefault == true
+					or Config.AutoLoadEnabled == true
+					or (selectedConfig ~= "" and GetAutoLoadName() == selectedConfig)
 
 				local function ResolveName()
 					local Value = NameInput and NameInput.Get and NameInput:Get() or currentName
@@ -3832,11 +4242,34 @@ function WisHub_Library:CreateWindow(Config)
 					RefreshList(selectedConfig)
 				end
 
+				local function SetAutoLoadVisual(Enabled)
+					autoLoadEnabled = Enabled == true
+
+					if AutoLoadToggle and AutoLoadToggle.Set then
+						SuppressAutoLoadToggle = true
+						AutoLoadToggle:Set(autoLoadEnabled)
+						SuppressAutoLoadToggle = false
+					end
+				end
+
+				local function Notify(Content)
+					if Config.Silent then
+						return
+					end
+
+					WisHub_Library:SetNotification({
+						Title = "WisHUB",
+						Description = "Config",
+						Content = Content,
+					})
+				end
+
 				NameInput = Item:AddInput({
 					Title = Config.NameTitle or "Config Name",
-					Content = Config.NameContent or "Input nama save",
-					Placeholder = Config.Placeholder or "Nama config",
+					Content = Config.NameContent or "Type a name for the config",
+					Placeholder = Config.Placeholder or "Config name",
 					Default = currentName,
+					Ignore = true,
 					Callback = function(Text)
 						currentName = tostring(Text or "")
 					end,
@@ -3844,10 +4277,11 @@ function WisHub_Library:CreateWindow(Config)
 
 				ConfigList = Item:AddDropdown({
 					Title = Config.ListTitle or "Saved Configs",
-					Content = Config.ListContent or "List saved config",
+					Content = Config.ListContent or "Select a saved config",
 					Multi = false,
 					Options = GetSavedList(),
 					Default = selectedConfig ~= "" and { selectedConfig } or {},
+					Ignore = true,
 					Callback = function(Choice)
 						local Picked = FirstChoice(Choice)
 						if Picked ~= "" then
@@ -3856,6 +4290,12 @@ function WisHub_Library:CreateWindow(Config)
 
 							if NameInput and NameInput.Set then
 								NameInput:Set(Picked)
+							end
+
+							-- The toggle mirrors whether the SELECTED config is
+							-- the auto-load one, without firing the handler.
+							if AutoLoadReady then
+								SetAutoLoadVisual(GetAutoLoadName() == Picked)
 							end
 						end
 					end,
@@ -3867,6 +4307,7 @@ function WisHub_Library:CreateWindow(Config)
 						Name = selectedConfig
 					end
 					if Name == "" then
+						Notify("Enter a config name first")
 						return false
 					end
 
@@ -3880,14 +4321,97 @@ function WisHub_Library:CreateWindow(Config)
 					if Handler then
 						Result = Handler(Name)
 					else
-						if type(Config.Saved) == "table" and not table.find(Config.Saved, Name) then
-							table.insert(Config.Saved, Name)
-						end
-						Result = Name
+						Result = ConfigSystem:Save(Name)
 					end
 
 					if Result ~= false then
+						if type(Config.Saved) == "table" and not table.find(Config.Saved, Name) then
+							table.insert(Config.Saved, Name)
+						end
 						SyncSelected(type(Result) == "string" and Result or Name)
+						Notify('Saved "' .. selectedConfig .. '"')
+					else
+						Notify('Failed to save "' .. Name .. '"')
+					end
+
+					return Result
+				end
+
+				local function DoLoad(Name)
+					Name = tostring(Name or "")
+					if Name == "" then
+						Name = selectedConfig
+					end
+					if Name == "" then
+						Name = ResolveName()
+					end
+					if Name == "" then
+						Notify("Select a config to load")
+						return false
+					end
+
+					local Handler = Config.OnLoad or Config.Load
+					local Result
+
+					if Handler then
+						Result = Handler(Name)
+					else
+						Result = ConfigSystem:Load(Name)
+					end
+
+					if Result ~= false then
+						SyncSelected(Name)
+						Notify('Loaded "' .. Name .. '"')
+					else
+						Notify('Failed to load "' .. Name .. '"')
+					end
+
+					return Result
+				end
+
+				local function DoDelete(Name)
+					Name = tostring(Name or "")
+					if Name == "" then
+						Name = selectedConfig
+					end
+					if Name == "" then
+						Name = ResolveName()
+					end
+					if Name == "" then
+						Notify("Select a config to delete")
+						return false
+					end
+
+					local Handler = Config.OnDelete or Config.Delete
+					local Result
+
+					if Handler then
+						Result = Handler(Name)
+					else
+						Result = ConfigSystem:Delete(Name)
+					end
+
+					if Result ~= false then
+						if type(Config.Saved) == "table" then
+							local Index = table.find(Config.Saved, Name)
+							if Index then
+								table.remove(Config.Saved, Index)
+							end
+						end
+
+						if selectedConfig == Name then
+							selectedConfig = ""
+							currentName = ""
+							if NameInput and NameInput.Set then
+								NameInput:Set("")
+							end
+							SetAutoLoadVisual(false)
+						end
+
+						RefreshList(selectedConfig)
+						Notify('Deleted "' .. Name .. '"')
+					else
+						Notify('Failed to delete "' .. Name .. '"')
 					end
 
 					return Result
@@ -3898,7 +4422,8 @@ function WisHub_Library:CreateWindow(Config)
 					Name = Name or (selectedConfig ~= "" and selectedConfig or ResolveName())
 
 					if autoLoadEnabled and Name == "" then
-						autoLoadEnabled = false
+						SetAutoLoadVisual(false)
+						Notify("Save or select a config first")
 						return false
 					end
 
@@ -3906,23 +4431,35 @@ function WisHub_Library:CreateWindow(Config)
 						or Config.SetAutoLoad
 						or Config.OnAutoLoad
 						or Config.AutoLoad
-					local Result = Handler and Handler(Name, autoLoadEnabled) or autoLoadEnabled
+					local Result
 
-					if Result ~= false and Name ~= "" then
+					if Handler then
+						Result = Handler(Name, autoLoadEnabled)
+					else
+						-- Enabling auto load for a name that was never saved
+						-- writes the current values first, so the marker always
+						-- points at a real config file.
+						if autoLoadEnabled and not ConfigSystem:ReadConfig(Name) then
+							ConfigSystem:Save(Name)
+						end
+						Result = ConfigSystem:SetAutoLoad(Name, autoLoadEnabled)
+					end
+
+					if Result ~= false and autoLoadEnabled and Name ~= "" then
 						SyncSelected(type(Result) == "string" and Result or Name)
 					end
 
 					return Result
 				end
 
-				local AutoLoadReady = false
-				local AutoLoadToggle = Item:AddToggle({
+				AutoLoadToggle = Item:AddToggle({
 					Title = Config.AutoLoadText or "Auto Load",
-					Content = Config.AutoLoadContent or "Load config ini otomatis",
+					Content = Config.AutoLoadContent or "Load this config automatically on startup",
 					Default = autoLoadEnabled,
+					Ignore = true,
 					Callback = function(Enabled)
-						autoLoadEnabled = Enabled == true
-						if not AutoLoadReady then
+						if not AutoLoadReady or SuppressAutoLoadToggle then
+							autoLoadEnabled = Enabled == true
 							return
 						end
 
@@ -3932,25 +4469,24 @@ function WisHub_Library:CreateWindow(Config)
 				AutoLoadReady = true
 
 				Item:AddButton({
-					Title = Config.SaveText or "Save",
-					Content = Config.SaveContent or "",
+					Title = Config.SaveText or "Save Config",
+					Content = Config.SaveContent or "Save current settings",
 					Callback = DoSave,
 				})
 
 				Item:AddButton({
-					Title = Config.SetAutoLoadText or "Set as Auto Load",
-					Content = Config.SetAutoLoadContent or "",
+					Title = Config.LoadText or "Load Config",
+					Content = Config.LoadContent or "Apply the selected config",
 					Callback = function()
-						local Saved = DoSave()
-						if Saved == false then
-							return false
-						end
+						return DoLoad()
+					end,
+				})
 
-						if AutoLoadToggle and AutoLoadToggle.Set then
-							return AutoLoadToggle:Set(true)
-						end
-
-						return ApplyAutoLoad(true, type(Saved) == "string" and Saved or selectedConfig)
+				Item:AddButton({
+					Title = Config.DeleteText or "Delete Config",
+					Content = Config.DeleteContent or "Remove the selected config",
+					Callback = function()
+						return DoDelete()
 					end,
 				})
 
@@ -3984,6 +4520,21 @@ function WisHub_Library:CreateWindow(Config)
 					if AutoLoadToggle and AutoLoadToggle.Set then
 						AutoLoadToggle:Set(Enabled == true)
 					end
+				end
+
+				function ConfigPanel:Save(Name)
+					if Name ~= nil and tostring(Name) ~= "" then
+						SyncSelected(Name)
+					end
+					return DoSave()
+				end
+
+				function ConfigPanel:Load(Name)
+					return DoLoad(Name)
+				end
+
+				function ConfigPanel:Delete(Name)
+					return DoDelete(Name)
 				end
 
 				return ConfigPanel
